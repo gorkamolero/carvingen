@@ -156,8 +156,68 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
 
   const runDisabled = runMutation.isPending || sourceImages.length === 0;
 
+  if (data.collapsed) {
+    return (
+      <NodeChrome
+        title="Mesh"
+        accentClassName="bg-[#3e8cff]"
+        testId="mesh-node"
+        nodeId={id}
+        collapsed
+        onToggleCollapsed={() => updateMeshNode(id, { collapsed: false })}
+      >
+        <Handle
+          data-testid="mesh-image-in"
+          type="target"
+          id="image-in"
+          position={Position.Left}
+        />
+        <div className="nodrag nopan nowheel relative aspect-square w-full overflow-hidden border-[3px] border-black bg-[#f9f5e8]">
+          {data.outputAssetId ? (
+            <model-viewer
+              src={getAssetUrl(data.outputAssetId)}
+              camera-controls
+              auto-rotate={data.autoRotate ? "" : undefined}
+              exposure={String(data.exposure ?? 1)}
+              environment-image="neutral"
+              shadow-intensity="1"
+              class="nodrag nopan nowheel"
+              style={{ width: "100%", height: "100%", background: "#fafaf5" }}
+            />
+          ) : data.thumbnailAssetId ? (
+            <img src={getAssetUrl(data.thumbnailAssetId)} alt="Mesh thumbnail" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
+              no mesh
+            </div>
+          )}
+          {runMutation.isPending ? (
+            <div className="pointer-events-none absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.28)_0_8px,transparent_8px_16px)] p-2">
+              <span className="inline-block self-start border-[2px] border-black bg-[#3e8cff] px-2 py-[2px] font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white">
+                {data.runStatus ?? "Running"}
+              </span>
+            </div>
+          ) : null}
+        </div>
+        <Handle
+          data-testid="mesh-glb-out"
+          type="source"
+          id="glb-out"
+          position={Position.Right}
+        />
+      </NodeChrome>
+    );
+  }
+
   return (
-    <NodeChrome title="Mesh" accentClassName="bg-[#3e8cff]" testId="mesh-node" nodeId={id}>
+    <NodeChrome
+      title="Mesh"
+      accentClassName="bg-[#3e8cff]"
+      testId="mesh-node"
+      nodeId={id}
+      collapsed={false}
+      onToggleCollapsed={() => updateMeshNode(id, { collapsed: true })}
+    >
       <Handle
         data-testid="mesh-image-in"
         type="target"
@@ -182,12 +242,25 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
         </div>
       </div>
 
-      <div className="relative aspect-square overflow-hidden border-[3px] border-black bg-[#f9f5e8]">
-        {data.thumbnailAssetId ? (
+      <div
+        className="nodrag nopan nowheel relative aspect-square overflow-hidden border-[3px] border-black bg-[#f9f5e8]"
+      >
+        {data.outputAssetId ? (
+          <model-viewer
+            src={getAssetUrl(data.outputAssetId)}
+            camera-controls
+            auto-rotate={data.autoRotate ? "" : undefined}
+            exposure={String(data.exposure)}
+            environment-image="neutral"
+            shadow-intensity="1"
+            class="nodrag nopan nowheel"
+            style={{ width: "100%", height: "100%", background: "#fafaf5" }}
+          />
+        ) : data.thumbnailAssetId ? (
           <img src={getAssetUrl(data.thumbnailAssetId)} alt="Mesh thumbnail" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,transparent_49%,rgba(0,0,0,0.08)_49%_51%,transparent_51%)] bg-[length:14px_14px] font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
-            Mesh thumbnail
+            Mesh preview
           </div>
         )}
         {runMutation.isPending ? (
@@ -199,6 +272,35 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
         ) : null}
       </div>
 
+      {data.outputAssetId ? (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => updateMeshNode(id, { autoRotate: !data.autoRotate })}
+            className={`nodrag h-8 shrink-0 border-[3px] border-black px-2.5 text-[10px] font-black uppercase tracking-[0.14em] ${
+              data.autoRotate ? "bg-black text-white" : "bg-white text-black hover:bg-[#e3eeff]"
+            }`}
+          >
+            {data.autoRotate ? "Rotate: on" : "Rotate: off"}
+          </button>
+          <label className="flex flex-1 items-center gap-2">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/55">Exp</span>
+            <input
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.1"
+              value={data.exposure ?? 1}
+              onChange={(event) => updateMeshNode(id, { exposure: Number(event.target.value) })}
+              className="nodrag h-2 w-full cursor-pointer appearance-none border-[3px] border-black bg-white accent-black"
+            />
+            <span className="w-8 text-right font-mono text-[10px] font-semibold text-black/70">
+              {(data.exposure ?? 1).toFixed(1)}
+            </span>
+          </label>
+        </div>
+      ) : null}
+
       <button
         data-testid="mesh-run-button"
         type="button"
@@ -206,7 +308,7 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
         disabled={runDisabled}
         className="flex h-11 w-full items-center justify-between gap-3 border-[3px] border-black bg-[#3e8cff] px-3 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_0_#0a0a0a] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_0_#0a0a0a] disabled:cursor-not-allowed disabled:bg-[#c7d1e2] disabled:text-white/60 disabled:shadow-none"
       >
-        <span>{runMutation.isPending ? "Running…" : "Run"}</span>
+        <span>{runMutation.isPending ? "Running…" : data.outputAssetId ? "Re-run" : "Run"}</span>
         <span className="font-mono text-[10px] font-medium text-white/80">
           {data.mode === "refine" ? "~1m · refine" : "~30s · preview"}
         </span>

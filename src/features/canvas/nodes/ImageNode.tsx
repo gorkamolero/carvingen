@@ -46,8 +46,48 @@ export function ImageNode({ id, data }: NodeProps<ImageGraphNode>) {
     }
   }
 
+  if (data.collapsed) {
+    return (
+      <NodeChrome
+        title="Image"
+        accentClassName="bg-[#ff6fa8]"
+        testId="image-node"
+        nodeId={id}
+        collapsed
+        onToggleCollapsed={() => updateImageNode(id, { collapsed: false })}
+      >
+        <div className="relative aspect-square w-full overflow-hidden border-[3px] border-black bg-white">
+          {data.assetId ? (
+            <img
+              src={data.previewUrl ?? getAssetUrl(data.assetId)}
+              alt={data.fileName ?? "Uploaded reference"}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
+              empty
+            </div>
+          )}
+        </div>
+        <Handle
+          data-testid="image-out-handle"
+          type="source"
+          id="image-out"
+          position={Position.Right}
+        />
+      </NodeChrome>
+    );
+  }
+
   return (
-    <NodeChrome title="Image" accentClassName="bg-[#ff6fa8]" testId="image-node" nodeId={id}>
+    <NodeChrome
+      title="Image"
+      accentClassName="bg-[#ff6fa8]"
+      testId="image-node"
+      nodeId={id}
+      collapsed={false}
+      onToggleCollapsed={() => updateImageNode(id, { collapsed: true })}
+    >
       <div className="relative aspect-square overflow-hidden border-[3px] border-black bg-white">
         {data.assetId ? (
           <img

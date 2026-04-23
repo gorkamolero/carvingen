@@ -138,8 +138,46 @@ export function VisionNode({ id, data }: NodeProps<VisionGraphNode>) {
   const runDisabled = runMutation.isPending || data.question.trim().length === 0;
   const changedDot = data.inputsChangedSinceLastRun && !runMutation.isPending;
 
+  if (data.collapsed) {
+    return (
+      <NodeChrome
+        title="Vision"
+        accentClassName="bg-[#ff8a3d]"
+        testId="vision-node"
+        nodeId={id}
+        collapsed
+        onToggleCollapsed={() => updateVisionNode(id, { collapsed: false })}
+      >
+        <Handle
+          data-testid="vision-image-in"
+          type="target"
+          id="image-in"
+          position={Position.Left}
+        />
+        <div className="aspect-square w-full overflow-hidden border-[3px] border-black bg-[#f9f5e8] p-2">
+          {data.answer ? (
+            <p className="overflow-hidden font-mono text-[10px] leading-[1.4] text-black/85 line-clamp-[12]">
+              {data.answer}
+            </p>
+          ) : (
+            <div className="flex h-full items-center justify-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
+              no answer
+            </div>
+          )}
+        </div>
+      </NodeChrome>
+    );
+  }
+
   return (
-    <NodeChrome title="Vision" accentClassName="bg-[#ff8a3d]" testId="vision-node" nodeId={id}>
+    <NodeChrome
+      title="Vision"
+      accentClassName="bg-[#ff8a3d]"
+      testId="vision-node"
+      nodeId={id}
+      collapsed={false}
+      onToggleCollapsed={() => updateVisionNode(id, { collapsed: true })}
+    >
       <Handle
         data-testid="vision-image-in"
         type="target"

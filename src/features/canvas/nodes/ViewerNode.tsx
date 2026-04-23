@@ -17,13 +17,53 @@ export function ViewerNode({ id, data }: NodeProps<ViewerGraphNode>) {
     graph.edges as unknown as import("@/lib/graph/types").CarvingEdge[],
   );
 
+  if (data.collapsed) {
+    return (
+      <NodeChrome
+        title="Viewer"
+        accentClassName="bg-[#8cff3e]"
+        testId="viewer-node"
+        nodeId={id}
+        collapsed
+        onToggleCollapsed={() => updateViewerNode(id, { collapsed: false })}
+      >
+        <Handle
+          data-testid="viewer-glb-in"
+          type="target"
+          id="glb-in"
+          position={Position.Left}
+        />
+        <div className="nodrag nopan nowheel aspect-square w-full overflow-hidden border-[3px] border-black bg-[#f9f5e8]">
+          {glbAssetId ? (
+            <model-viewer
+              src={getAssetUrl(glbAssetId)}
+              camera-controls
+              auto-rotate={data.autoRotate ? "" : undefined}
+              exposure={String(data.exposure)}
+              environment-image="neutral"
+              shadow-intensity="1"
+              class="nodrag nopan nowheel"
+              style={{ width: "100%", height: "100%", background: "#fafaf5" }}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
+              no glb
+            </div>
+          )}
+        </div>
+      </NodeChrome>
+    );
+  }
+
   return (
     <NodeChrome
       title="Viewer"
       accentClassName="bg-[#8cff3e]"
-      className="w-[380px]"
+      className={data.collapsed ? "" : "!w-[380px]"}
       testId="viewer-node"
       nodeId={id}
+      collapsed={false}
+      onToggleCollapsed={() => updateViewerNode(id, { collapsed: true })}
     >
       <Handle
         data-testid="viewer-glb-in"

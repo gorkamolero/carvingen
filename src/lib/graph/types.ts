@@ -24,6 +24,7 @@ export const promptNodeDataSchema = z.object({
   runStatus: z.string().nullable().optional(),
   errorMessage: z.string().nullable().optional(),
   lastRunCost: z.number().nullable().optional(),
+  collapsed: z.boolean().optional().default(false),
 });
 
 export const imageNodeDataSchema = z.object({
@@ -34,6 +35,7 @@ export const imageNodeDataSchema = z.object({
   height: z.number().int().nullable().optional(),
   isUploading: z.boolean().default(false),
   errorMessage: z.string().nullable().optional(),
+  collapsed: z.boolean().optional().default(false),
 });
 
 export const meshNodeDataSchema = z.object({
@@ -45,11 +47,16 @@ export const meshNodeDataSchema = z.object({
   inputsChangedSinceLastRun: z.boolean().default(false),
   runStatus: z.string().nullable().optional(),
   errorMessage: z.string().nullable().optional(),
+  collapsed: z.boolean().optional().default(false),
+  // Viewer controls (merged from the retired Viewer node).
+  autoRotate: z.boolean().optional().default(true),
+  exposure: z.number().optional().default(1),
 });
 
 export const viewerNodeDataSchema = z.object({
   autoRotate: z.boolean(),
   exposure: z.number(),
+  collapsed: z.boolean().optional().default(false),
 });
 
 export const visionNodeDataSchema = z.object({
@@ -61,6 +68,7 @@ export const visionNodeDataSchema = z.object({
   runStatus: z.string().nullable().optional(),
   errorMessage: z.string().nullable().optional(),
   lastRunCost: z.number().nullable().optional(),
+  collapsed: z.boolean().optional().default(false),
 });
 
 export type PromptNodeData = z.infer<typeof promptNodeDataSchema>;
@@ -100,6 +108,7 @@ export function createPromptNodeData(): PromptNodeData {
     runStatus: null,
     errorMessage: null,
     lastRunCost: null,
+    collapsed: false,
   };
 }
 
@@ -112,6 +121,7 @@ export function createImageNodeData(): ImageNodeData {
     height: null,
     isUploading: false,
     errorMessage: null,
+    collapsed: false,
   };
 }
 
@@ -125,6 +135,9 @@ export function createMeshNodeData(): MeshNodeData {
     inputsChangedSinceLastRun: false,
     runStatus: null,
     errorMessage: null,
+    collapsed: false,
+    autoRotate: true,
+    exposure: 1,
   };
 }
 
@@ -132,6 +145,7 @@ export function createViewerNodeData(): ViewerNodeData {
   return {
     autoRotate: true,
     exposure: 1,
+    collapsed: false,
   };
 }
 
@@ -145,6 +159,7 @@ export function createVisionNodeData(): VisionNodeData {
     runStatus: null,
     errorMessage: null,
     lastRunCost: null,
+    collapsed: false,
   };
 }
 

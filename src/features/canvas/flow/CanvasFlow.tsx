@@ -53,41 +53,70 @@ export function CanvasFlow() {
       return;
     }
 
-    const file = event.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      const node = addCanvasNode("image", position);
+    const files = Array.from(event.dataTransfer.files ?? []).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (files.length === 0) {
+      return;
+    }
+
+    // Lay out multiple-file drops on a grid starting at the cursor.
+    // STEP_X/Y account for node width + shadow + breathing room so edges
+    // never overlap. cols caps at 4 so the row doesn't stretch off screen;
+    // overflow wraps to the next row.
+    const STEP_X = 352;
+    const STEP_Y = 480;
+    const cols = Math.min(files.length, 4);
+
+    files.forEach((file, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const nodePosition = {
+        x: position.x + col * STEP_X,
+        y: position.y + row * STEP_Y,
+      };
+
+      const node = addCanvasNode("image", nodePosition);
       updateImageNode(node.id, {
         isUploading: true,
         fileName: file.name,
       });
+
       const toastId = showLoadingToast({
-        title: "Uploading dropped image",
+        title:
+          files.length > 1
+            ? `Uploading ${index + 1}/${files.length}`
+            : "Uploading dropped image",
         description: file.name,
       });
 
-      try {
-        const payload = await uploadImageAsset(file);
-        updateImageNode(node.id, {
-          assetId: payload.assetId,
-          previewUrl: payload.url ?? null,
-          isUploading: false,
-          errorMessage: null,
-        });
-        showSuccessToast(toastId, {
-          title: "Image added to canvas",
-          description: file.name,
-        });
-      } catch (error) {
-        updateImageNode(node.id, {
-          isUploading: false,
-          errorMessage: getErrorMessage(error, "Upload failed."),
-        });
-        showErrorToast(toastId, {
-          title: "Drop upload failed",
-          description: getErrorMessage(error, "Upload failed."),
-        });
-      }
-    }
+      // Uploads run in parallel; the grid of empty nodes appears immediately
+      // and each one fills in as its upload completes.
+      void (async () => {
+        try {
+          const payload = await uploadImageAsset(file);
+          updateImageNode(node.id, {
+            assetId: payload.assetId,
+            previewUrl: payload.url ?? null,
+            isUploading: false,
+            errorMessage: null,
+          });
+          showSuccessToast(toastId, {
+            title: "Image added to canvas",
+            description: file.name,
+          });
+        } catch (error) {
+          updateImageNode(node.id, {
+            isUploading: false,
+            errorMessage: getErrorMessage(error, "Upload failed."),
+          });
+          showErrorToast(toastId, {
+            title: "Drop upload failed",
+            description: getErrorMessage(error, "Upload failed."),
+          });
+        }
+      })();
+    });
   }, []);
 
   const onConnectEnd = useCallback<OnConnectEnd>(

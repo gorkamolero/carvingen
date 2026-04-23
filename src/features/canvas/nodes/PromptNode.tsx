@@ -183,14 +183,39 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
   const runDisabled = runMutation.isPending || data.text.trim().length === 0;
   const changedDot = data.inputsChangedSinceLastRun && !runMutation.isPending;
 
+  const promptPreview = data.text.trim().length > 0 ? data.text.trim() : "(no prompt)";
+
   return (
-    <NodeChrome title="Prompt" accentClassName="bg-[#ffd400]" testId="prompt-node" nodeId={id}>
+    <NodeChrome
+      title="Prompt"
+      accentClassName="bg-[#ffd400]"
+      testId="prompt-node"
+      nodeId={id}
+      collapsed={data.collapsed}
+      onToggleCollapsed={() => {
+        updatePromptNode(id, { collapsed: !data.collapsed });
+        markNodeDirty(id);
+      }}
+    >
       <Handle
         data-testid="prompt-image-in"
         type="target"
         id="image-in"
         position={Position.Left}
       />
+      {data.collapsed ? (
+        <div className="relative aspect-square w-full overflow-hidden border-[3px] border-black bg-[#f9f5e8]" title={promptPreview}>
+          {latestAssetId ? (
+            <img src={getAssetUrl(latestAssetId)} alt="Latest output" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center p-2 font-mono text-[10px] leading-[1.35] text-black/55 line-clamp-6">
+              {promptPreview}
+            </div>
+          )}
+          {runMutation.isPending ? <RunningOverlay label={data.runStatus ?? "Running"} /> : null}
+        </div>
+      ) : (
+      <>
       <textarea
         data-testid="prompt-textarea"
         value={data.text}
@@ -349,6 +374,8 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
       {data.errorMessage ? (
         <p className="font-mono text-[11px] leading-[1.3] text-[#d8421b]">{data.errorMessage}</p>
       ) : null}
+      </>
+      )}
 
       <Handle
         data-testid="prompt-image-out"
