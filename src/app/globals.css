@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fafaf5;
+  --foreground: #111111;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-archivo-black);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-archivo-black), sans-serif;
+}
+
+button,
+select,
+input,
+textarea {
+  outline: none;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__controls-button,
+.react-flow__minimap {
+  border: 3px solid #000 !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 #000 !important;
+}
+
+.react-flow__handle {
+  border-radius: 0 !important;
+}
+
+.react-flow__node.selected > div {
+  outline: 3px solid #000;
+  outline-offset: 4px;
+}
