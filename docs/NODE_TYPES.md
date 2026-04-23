@@ -50,7 +50,7 @@ Multi-project plumbing: every `/api/projects/*` and `/api/jobs/*` call carries t
                       │ │ moon motifs...           │ │
                       │ └──────────────────────────┘ │
  image-in (multi) ●──▶│ Model: [ Nano Banana Pro ▼ ] │
-                      │         multi-fuse · ~$0.10   │
+                      │     Blend several refs · ~$0.10 │
                       │ Aspect: ⦿1:1 ○3:4 ○16:9      │
                       │ Res:    ⦿1K  ○2K              │ ← only when model supports >1K
                       │                              │

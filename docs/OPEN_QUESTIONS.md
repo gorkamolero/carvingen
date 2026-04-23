@@ -9,7 +9,7 @@ The spec has enough detail for an agent to start building M0. Before that, three
 **Decision.** A fresh ImageGen node shows an always-visible model selector with `fal-ai/nano-banana-2` **preselected**. Each option in the selector is one row with:
 
 - model display name
-- a very sparse tagline (e.g. `fast · 14 refs`, `best text · 2K`, `edits · 1 ref`)
+- a very sparse action-oriented tagline (e.g. `Quick, cheap drafts`, `Follows the prompt closest`, `Retouch one image`) — describe what the carver would pick the model for, not the model's raw capabilities
 - the price tier
 
 Nano Banana 2 is the preselected option because it's the cheapest and highest ref-cap — fits the "draw lots, pick one" carver iteration loop. No persisted last-pick behavior in v1 (every new node starts on Nano Banana 2). The user can change it freely.

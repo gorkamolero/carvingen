@@ -99,10 +99,10 @@ Each row shows: model name · sparse tagline · **numeric per-image estimate at 
 │ [Prompt text area]                    │
 │                                       │
 │ Model: [ Nano Banana Pro     ▼ ]     │
-│   • GPT Image 2     best text    ~$0.08│
-│   • Nano Banana 2   fast · 14 refs ~$0.04│
-│   • Nano Banana Pro multi-fuse    ~$0.10│
-│   • Flux Kontext    edits · 1 ref  ~$0.04│
+│   • GPT Image 2     Follows the prompt closest   ~$0.08│
+│   • Nano Banana 2   Quick, cheap drafts          ~$0.04│
+│   • Nano Banana Pro Blend several refs           ~$0.10│
+│   • Flux Kontext    Retouch one image            ~$0.04│
 │                                       │
 │ Aspect:     [ 1:1 ] [ 3:4 ] [ 16:9 ] │
 │ Resolution: [ 1K  ] [ 2K  ]          │  ← only if model supports >1K

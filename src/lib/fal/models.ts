@@ -34,7 +34,7 @@ export type ModelCapability = {
 export const IMAGE_MODEL_CAPABILITIES: Record<ImageModelBase, ModelCapability> = {
   "openai/gpt-image-2": {
     displayName: "ChatGPT Image Gen 2",
-    tagline: "best text",
+    tagline: "Follows the prompt closest",
     estimateByResolution: { "1K": 0.08, "2K": 0.16, "4K": 0.32 },
     aspectRatios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
     resolutions: ["1K", "2K", "4K"],
@@ -43,7 +43,7 @@ export const IMAGE_MODEL_CAPABILITIES: Record<ImageModelBase, ModelCapability> =
   },
   "fal-ai/nano-banana-2": {
     displayName: "Nano Banana 2",
-    tagline: "fast · 14 refs",
+    tagline: "Quick, cheap drafts",
     estimateByResolution: { "1K": 0.04 },
     aspectRatios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
     resolutions: ["1K"],
@@ -52,7 +52,7 @@ export const IMAGE_MODEL_CAPABILITIES: Record<ImageModelBase, ModelCapability> =
   },
   "fal-ai/nano-banana-pro": {
     displayName: "Nano Banana Pro",
-    tagline: "multi-fuse",
+    tagline: "Blend several refs",
     estimateByResolution: { "1K": 0.1, "2K": 0.18 },
     aspectRatios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
     resolutions: ["1K", "2K"],
@@ -61,7 +61,7 @@ export const IMAGE_MODEL_CAPABILITIES: Record<ImageModelBase, ModelCapability> =
   },
   "fal-ai/flux-pro/kontext": {
     displayName: "Flux Kontext Pro",
-    tagline: "edits · 1 ref",
+    tagline: "Retouch one image",
     estimateByResolution: { "1K": 0.04 },
     aspectRatios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
     resolutions: ["1K"],
@@ -81,12 +81,12 @@ export const VISION_MODEL_OPTIONS = [
   {
     value: "google/gemini-2.5-flash",
     label: "Gemini 2.5 Flash",
-    tagline: "fast visual QA",
+    tagline: "Quick critique",
   },
   {
     value: "openai/gpt-4.1-mini",
     label: "GPT-4.1 Mini",
-    tagline: "tight captions",
+    tagline: "Detailed read",
   },
 ] as const;
 
