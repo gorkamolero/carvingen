@@ -128,6 +128,8 @@ export function CanvasFlow() {
         onConnectEnd={onConnectEnd}
         connectionMode={ConnectionMode.Loose}
         fitView
+        minZoom={0.05}
+        maxZoom={3}
         defaultEdgeOptions={{
           type: "step",
           animated: false,
