@@ -26,6 +26,21 @@ describe("image adapter", () => {
     }) as Record<string, unknown>;
 
     expect(request.seed).toBeUndefined();
-    expect(request.image_size).toBe("1024x1024");
+    expect(request.image_size).toBe("square");
+  });
+
+  it("maps gpt-image-2 widescreen sizes to structured dimensions", () => {
+    const request = buildImageRequest({
+      modelBase: "openai/gpt-image-2",
+      prompt: "raven",
+      referenceImages: [],
+      aspectRatio: "16:9",
+      resolution: "2K",
+    }) as Record<string, unknown>;
+
+    expect(request.image_size).toEqual({
+      width: 2048,
+      height: 1152,
+    });
   });
 });

@@ -36,7 +36,7 @@ export const IMAGE_MODEL_CAPABILITIES: Record<ImageModelBase, ModelCapability> =
     displayName: "ChatGPT Image Gen 2",
     tagline: "best text",
     estimateByResolution: { "1K": 0.08, "2K": 0.16, "4K": 0.32 },
-    aspectRatios: ["1:1", "3:2", "2:3"],
+    aspectRatios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
     resolutions: ["1K", "2K", "4K"],
     maxReferences: 4,
     usesEditSuffix: true,

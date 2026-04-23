@@ -54,21 +54,10 @@ export function buildImageRequest(input: ImageGenInput) {
       return {
         prompt: input.prompt,
         image_urls: input.referenceImages.length ? input.referenceImages : undefined,
-        aspect_ratio: input.aspectRatio,
         num_images: 1,
         output_format: "png",
-        quality:
-          input.resolution === "1K"
-            ? "medium"
-            : input.resolution === "2K"
-              ? "high"
-              : "high",
-        image_size:
-          input.resolution === "1K"
-            ? "1024x1024"
-            : input.resolution === "2K"
-              ? "2048x2048"
-              : "4096x4096",
+        quality: input.resolution === "1K" ? "medium" : "high",
+        image_size: getGptImage2Size(input.aspectRatio, input.resolution),
       };
     case "fal-ai/nano-banana-2":
       return {
@@ -95,4 +84,45 @@ export function buildImageRequest(input: ImageGenInput) {
         seed: input.seed ?? undefined,
       };
   }
+}
+
+function getGptImage2Size(
+  aspectRatio: ImageAspectRatio,
+  resolution: ImageResolution,
+) {
+  const sizeByResolution = {
+    "1K": {
+      "1:1": "square",
+      "3:4": { width: 768, height: 1024 },
+      "4:3": { width: 1024, height: 768 },
+      "9:16": { width: 576, height: 1024 },
+      "16:9": { width: 1024, height: 576 },
+    },
+    "2K": {
+      "1:1": { width: 2048, height: 2048 },
+      "3:4": { width: 1536, height: 2048 },
+      "4:3": { width: 2048, height: 1536 },
+      "9:16": { width: 1152, height: 2048 },
+      "16:9": { width: 2048, height: 1152 },
+    },
+    "4K": {
+      "1:1": { width: 2880, height: 2880 },
+      "3:4": { width: 2480, height: 3312 },
+      "4:3": { width: 3312, height: 2480 },
+      "9:16": { width: 2160, height: 3840 },
+      "16:9": { width: 3840, height: 2160 },
+    },
+  } as const;
+
+  if (
+    aspectRatio !== "1:1" &&
+    aspectRatio !== "3:4" &&
+    aspectRatio !== "4:3" &&
+    aspectRatio !== "9:16" &&
+    aspectRatio !== "16:9"
+  ) {
+    throw new ApiError(400, `openai/gpt-image-2 does not support ${aspectRatio}.`);
+  }
+
+  return sizeByResolution[resolution][aspectRatio];
 }
