@@ -2,6 +2,56 @@
 
 import { Toaster as Sonner } from "sonner";
 
+function LoadingIcon() {
+  return (
+    <svg
+      viewBox="0 0 14 14"
+      className="h-3.5 w-3.5 animate-spin"
+      aria-hidden
+    >
+      <circle
+        cx="7"
+        cy="7"
+        r="5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeDasharray="11 20"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
+function SuccessIcon() {
+  return (
+    <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" aria-hidden>
+      <path
+        d="M3 7 L6 10 L11 4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </svg>
+  );
+}
+
+function ErrorIcon() {
+  return (
+    <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" aria-hidden>
+      <path
+        d="M3 3 L11 11 M11 3 L3 11"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
 export function Toaster() {
   return (
     <Sonner
@@ -9,11 +59,16 @@ export function Toaster() {
       expand
       closeButton
       visibleToasts={5}
+      icons={{
+        loading: <LoadingIcon />,
+        success: <SuccessIcon />,
+        error: <ErrorIcon />,
+      }}
       toastOptions={{
         unstyled: true,
         classNames: {
           toast:
-            "group pointer-events-auto flex w-full items-start gap-3 border-[3px] border-black bg-white p-3 text-black shadow-[6px_6px_0_0_#0a0a0a]",
+            "group pointer-events-auto flex w-full items-center gap-3 border-[3px] border-black bg-white p-3 text-black shadow-[6px_6px_0_0_#0a0a0a] [&>[data-icon]]:flex [&>[data-icon]]:h-4 [&>[data-icon]]:w-4 [&>[data-icon]]:shrink-0 [&>[data-icon]]:items-center [&>[data-icon]]:justify-center",
           title: "text-[11px] font-black uppercase tracking-[0.16em] text-black",
           description: "font-mono text-[11px] leading-[1.45] text-black/70",
           actionButton:

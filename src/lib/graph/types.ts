@@ -6,11 +6,23 @@ import {
   IMAGE_MODEL_BASES,
   IMAGE_RESOLUTIONS,
   type MeshMode,
-  VISION_MODEL_OPTIONS,
+  VISION_MODEL_VALUES,
 } from "@/lib/fal/models";
 
 export const nodeTypeSchema = z.enum(["prompt", "image", "mesh", "viewer", "vision"]);
 export const handleIdSchema = z.enum(["image-in", "image-out", "glb-in", "glb-out"]);
+
+const promptVersionSnapshotSchema = z.object({
+  prompt: z.string(),
+  model: z.enum(IMAGE_MODEL_BASES),
+  aspectRatio: z.enum(IMAGE_ASPECT_RATIOS),
+  resolution: z.enum(IMAGE_RESOLUTIONS),
+  seed: z.number().int().nullable().optional(),
+  referenceAssetIds: z.array(z.string()).optional().default([]),
+  createdAt: z.number().optional(),
+});
+
+export type PromptVersionSnapshot = z.infer<typeof promptVersionSnapshotSchema>;
 
 export const promptNodeDataSchema = z.object({
   text: z.string(),
@@ -20,11 +32,24 @@ export const promptNodeDataSchema = z.object({
   seed: z.number().int().nullable().optional(),
   activeJobId: z.string().nullable(),
   outputAssetIds: z.array(z.string()),
+  // Which asset id is "active" — shown in the big output slot AND
+  // resolved as this node's image-out for downstream. Null/undefined
+  // falls back to outputAssetIds.at(-1) (the latest run).
+  activeAssetId: z.string().nullable().optional(),
+  // Per-asset snapshot of the prompt state at generation time, so
+  // clicking a history thumb can restore text/model/aspect/resolution.
+  // Legacy rows may be missing entries — UI falls back gracefully.
+  versionMetadata: z.record(z.string(), promptVersionSnapshotSchema).optional().default({}),
   inputsChangedSinceLastRun: z.boolean(),
   runStatus: z.string().nullable().optional(),
   errorMessage: z.string().nullable().optional(),
   lastRunCost: z.number().nullable().optional(),
   collapsed: z.boolean().optional().default(false),
+  // When true, this Prompt's reference list flattens the entire upstream
+  // chain: for every incoming Prompt, include its output plus its own
+  // references (recursively). Off by default — each Prompt sees only its
+  // direct incoming images.
+  chainSources: z.boolean().optional().default(false),
 });
 
 export const imageNodeDataSchema = z.object({
@@ -61,7 +86,7 @@ export const viewerNodeDataSchema = z.object({
 
 export const visionNodeDataSchema = z.object({
   question: z.string(),
-  model: z.enum(VISION_MODEL_OPTIONS.map((option) => option.value) as [string, ...string[]]),
+  model: z.enum(VISION_MODEL_VALUES),
   activeJobId: z.string().nullable(),
   answer: z.string().nullable(),
   inputsChangedSinceLastRun: z.boolean().default(false),
@@ -104,11 +129,14 @@ export function createPromptNodeData(): PromptNodeData {
     seed: null,
     activeJobId: null,
     outputAssetIds: [],
+    activeAssetId: null,
+    versionMetadata: {},
     inputsChangedSinceLastRun: false,
     runStatus: null,
     errorMessage: null,
     lastRunCost: null,
     collapsed: false,
+    chainSources: false,
   };
 }
 

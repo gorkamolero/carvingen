@@ -12,12 +12,14 @@ export function ProjectSwitcher({
   onSelect,
   onCreate,
   onRename,
+  onOpenHelp,
 }: {
   projects: ProjectListItem[];
   activeProjectId: string | null;
   onSelect: (projectId: string) => void;
   onCreate: () => void;
   onRename: () => void;
+  onOpenHelp: () => void;
 }) {
   return (
     <div className="flex items-center gap-3 border-b-[3px] border-black bg-[#efe8cd] px-5 py-3">
@@ -66,6 +68,15 @@ export function ProjectSwitcher({
           className="h-9 border-[3px] border-black bg-[#ffd400] px-3 text-[11px] font-black uppercase tracking-[0.14em] shadow-[3px_3px_0_0_#0a0a0a] transition active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0_0_#0a0a0a]"
         >
           + New
+        </button>
+        <button
+          data-testid="help-button"
+          type="button"
+          onClick={onOpenHelp}
+          aria-label="Open keyboard and gesture reference"
+          className="h-9 border-[3px] border-black bg-white px-3 text-[11px] font-black uppercase tracking-[0.14em] shadow-[3px_3px_0_0_#0a0a0a] transition active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0_0_#0a0a0a]"
+        >
+          ? Help
         </button>
       </div>
     </div>

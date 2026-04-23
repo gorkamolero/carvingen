@@ -9,16 +9,87 @@ export function getLatestPromptAssetId(node: CarvingNode) {
   return node.type === "prompt" ? node.data.outputAssetIds.at(-1) ?? null : null;
 }
 
+/**
+ * The "active" generation on a Prompt node — the one shown in the main
+ * output slot and flowed to downstream nodes. Falls back to the latest
+ * run when no explicit selection has been made.
+ */
+export function getActivePromptAssetId(node: CarvingNode) {
+  if (node.type !== "prompt") return null;
+  const { activeAssetId, outputAssetIds } = node.data;
+  if (activeAssetId && outputAssetIds.includes(activeAssetId)) {
+    return activeAssetId;
+  }
+  return outputAssetIds.at(-1) ?? null;
+}
+
 export function getNodeImageAssetId(node: CarvingNode) {
   if (node.type === "image") {
     return node.data.assetId;
   }
 
   if (node.type === "prompt") {
-    return getLatestPromptAssetId(node);
+    return getActivePromptAssetId(node);
   }
 
   return null;
+}
+
+/**
+ * Direct-only lookup: for a given node, returns the list of asset ids
+ * feeding its `image-in` handle. Used for Mesh, Vision, and Prompt nodes
+ * with chainSources disabled.
+ */
+function collectDirectIncoming(
+  nodeId: string,
+  nodes: readonly CarvingNode[],
+  edges: readonly CarvingEdge[],
+): string[] {
+  return edges
+    .filter((edge) => edge.target === nodeId && edge.targetHandle === "image-in")
+    .map((edge) => getNodeById(nodes, edge.source))
+    .map((node) => (node ? getNodeImageAssetId(node) : null))
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
+/**
+ * Recursive lookup used when a Prompt node has `chainSources` enabled.
+ * For each incoming edge, include the direct source's asset id; if the
+ * source is itself a Prompt, also include every ancestor's asset id
+ * transitively. Cycles are prevented via the `visited` guard — the
+ * DAG shouldn't have cycles, but defensively so.
+ */
+function collectAncestorIncoming(
+  nodeId: string,
+  nodes: readonly CarvingNode[],
+  edges: readonly CarvingEdge[],
+  visited: Set<string>,
+): string[] {
+  if (visited.has(nodeId)) {
+    return [];
+  }
+  visited.add(nodeId);
+
+  const out: string[] = [];
+  const directEdges = edges.filter(
+    (edge) => edge.target === nodeId && edge.targetHandle === "image-in",
+  );
+
+  for (const edge of directEdges) {
+    const src = getNodeById(nodes, edge.source);
+    if (!src) continue;
+
+    const directAsset = getNodeImageAssetId(src);
+    if (directAsset) {
+      out.push(directAsset);
+    }
+
+    if (src.type === "prompt") {
+      out.push(...collectAncestorIncoming(src.id, nodes, edges, visited));
+    }
+  }
+
+  return out;
 }
 
 export function getIncomingImageAssetIds(
@@ -26,11 +97,16 @@ export function getIncomingImageAssetIds(
   nodes: readonly CarvingNode[],
   edges: readonly CarvingEdge[],
 ) {
-  return edges
-    .filter((edge) => edge.target === nodeId && edge.targetHandle === "image-in")
-    .map((edge) => getNodeById(nodes, edge.source))
-    .map((node) => (node ? getNodeImageAssetId(node) : null))
-    .filter(Boolean) as string[];
+  const target = getNodeById(nodes, nodeId);
+  const chainOn =
+    target?.type === "prompt" ? (target.data.chainSources ?? false) : false;
+
+  const collected = chainOn
+    ? collectAncestorIncoming(nodeId, nodes, edges, new Set())
+    : collectDirectIncoming(nodeId, nodes, edges);
+
+  // Dedupe while preserving wire order (first occurrence wins).
+  return Array.from(new Set(collected));
 }
 
 export function getIncomingImageUrls(
@@ -49,6 +125,35 @@ export function getIncomingImageUrls(
 
     return getAssetUrl(assetId);
   });
+}
+
+/**
+ * Count the number of upstream Prompt ancestors. Used by the UI to decide
+ * whether the chain toggle is meaningful (there's actual upstream to chain).
+ */
+export function countUpstreamPromptAncestors(
+  nodeId: string,
+  nodes: readonly CarvingNode[],
+  edges: readonly CarvingEdge[],
+): number {
+  const visited = new Set<string>();
+  let count = 0;
+
+  function walk(id: string) {
+    if (visited.has(id)) return;
+    visited.add(id);
+    for (const edge of edges) {
+      if (edge.target !== id || edge.targetHandle !== "image-in") continue;
+      const src = getNodeById(nodes, edge.source);
+      if (src?.type === "prompt") {
+        count += 1;
+        walk(src.id);
+      }
+    }
+  }
+
+  walk(nodeId);
+  return count;
 }
 
 export function getIncomingGlbAssetId(

@@ -11,7 +11,11 @@ import { fetchJson } from "@/lib/api/client";
 import { buildImageRequest, pickImageSlug } from "@/lib/fal/image";
 import { IMAGE_MODEL_CAPABILITIES, type ImageModelBase, type ImageResolution } from "@/lib/fal/models";
 import { graphHistory, markNodeDirty, updatePromptNode } from "@/lib/graph/store";
-import { getIncomingImageAssetIds, getIncomingImageUrls } from "@/lib/graph/selectors";
+import {
+  countUpstreamPromptAncestors,
+  getIncomingImageAssetIds,
+  getIncomingImageUrls,
+} from "@/lib/graph/selectors";
 import type { PromptNode as PromptGraphNode } from "@/lib/graph/types";
 import { getErrorMessage, showErrorToast, showLoadingToast, showSuccessToast } from "@/lib/notifications/toast";
 import { NodeChrome } from "@/features/canvas/nodes/NodeChrome";
@@ -42,8 +46,50 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
     graph.nodes as unknown as PromptGraphNode[],
     graph.edges as unknown as import("@/lib/graph/types").CarvingEdge[],
   );
-  const latestAssetId = data.outputAssetIds.at(-1) ?? null;
-  const history = data.outputAssetIds.slice(0, -1).reverse();
+  const upstreamPromptCount = countUpstreamPromptAncestors(
+    id,
+    graph.nodes as unknown as PromptGraphNode[],
+    graph.edges as unknown as import("@/lib/graph/types").CarvingEdge[],
+  );
+  const activeAssetId =
+    data.activeAssetId && data.outputAssetIds.includes(data.activeAssetId)
+      ? data.activeAssetId
+      : data.outputAssetIds.at(-1) ?? null;
+  const history = data.outputAssetIds
+    .filter((assetId) => assetId !== activeAssetId)
+    .reverse();
+
+  function selectVersion(assetId: string) {
+    if (assetId === activeAssetId) return;
+    const meta = data.versionMetadata?.[assetId];
+    const patch: {
+      activeAssetId: string;
+      text?: string;
+      model?: PromptGraphNode["data"]["model"];
+      aspectRatio?: PromptGraphNode["data"]["aspectRatio"];
+      resolution?: PromptGraphNode["data"]["resolution"];
+      seed?: number | null;
+      inputsChangedSinceLastRun?: boolean;
+    } = { activeAssetId: assetId };
+    if (meta) {
+      patch.text = meta.prompt;
+      patch.model = meta.model;
+      patch.aspectRatio = meta.aspectRatio;
+      patch.resolution = meta.resolution;
+      patch.seed = meta.seed ?? null;
+      // If the currently-wired references match the snapshot's, this
+      // version is fully re-runnable as-is — clear the "inputs changed"
+      // ping. If they diverge (user rewired since), keep it lit.
+      const snapRefs = meta.referenceAssetIds ?? [];
+      const liveRefs = referenceAssetIds;
+      const refsMatch =
+        snapRefs.length === liveRefs.length &&
+        snapRefs.every((snapId, i) => snapId === liveRefs[i]);
+      patch.inputsChangedSinceLastRun = !refsMatch;
+    }
+    updatePromptNode(id, patch);
+    markNodeDirty(id);
+  }
   const capability = IMAGE_MODEL_CAPABILITIES[data.model];
   const aspectRatioClass = ASPECT_RATIO_CLASS_BY_VALUE[data.aspectRatio];
 
@@ -53,11 +99,15 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
         throw new Error("No active project.");
       }
 
-      const slug = pickImageSlug(data.model, references);
+      // Cap the reference list to the model's ceiling. Chain-through can
+      // surface more images than e.g. Flux Kontext's 1 — sending past the
+      // cap gets a 422 from fal.
+      const cappedReferences = references.slice(0, capability.maxReferences);
+      const slug = pickImageSlug(data.model, cappedReferences);
       const input = buildImageRequest({
         modelBase: data.model,
         prompt: data.text,
-        referenceImages: references,
+        referenceImages: cappedReferences,
         aspectRatio: data.aspectRatio,
         resolution: data.resolution,
         seed: data.seed,
@@ -156,6 +206,19 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
       updatePromptNode(id, {
         activeJobId: null,
         outputAssetIds: [...data.outputAssetIds, assetId],
+        activeAssetId: assetId,
+        versionMetadata: {
+          ...(data.versionMetadata ?? {}),
+          [assetId]: {
+            prompt: data.text,
+            model: data.model,
+            aspectRatio: data.aspectRatio,
+            resolution: data.resolution,
+            seed: data.seed ?? null,
+            referenceAssetIds: referenceAssetIds.slice(0, capability.maxReferences),
+            createdAt: Date.now(),
+          },
+        },
         inputsChangedSinceLastRun: false,
         runStatus: null,
         errorMessage: null,
@@ -205,8 +268,8 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
       />
       {data.collapsed ? (
         <div className="relative aspect-square w-full overflow-hidden border-[3px] border-black bg-[#f9f5e8]" title={promptPreview}>
-          {latestAssetId ? (
-            <img src={getAssetUrl(latestAssetId)} alt="Latest output" className="h-full w-full object-cover" />
+          {activeAssetId ? (
+            <img src={getAssetUrl(activeAssetId)} alt="Latest output" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center p-2 font-mono text-[10px] leading-[1.35] text-black/55 line-clamp-6">
               {promptPreview}
@@ -278,10 +341,34 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
       <Field
         label={`References ${referenceAssetIds.length > 0 ? `(${referenceAssetIds.length}/${capability.maxReferences})` : ""}`}
       >
+        {upstreamPromptCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => {
+              updatePromptNode(id, {
+                chainSources: !(data.chainSources ?? false),
+                inputsChangedSinceLastRun: true,
+              });
+              markNodeDirty(id);
+            }}
+            title="When on, this Prompt sees every upstream reference image flattened down the chain, not just the direct output."
+            className={`flex items-center justify-between gap-2 border-[3px] border-black px-2 py-1.5 text-[10px] font-black uppercase leading-none tracking-[0.14em] ${
+              data.chainSources
+                ? "bg-black text-white"
+                : "bg-white text-black hover:bg-[#fff7cc]"
+            }`}
+          >
+            <span>Chain upstream refs</span>
+            <span className={`inline-block h-2.5 w-2.5 border-[2px] border-black ${data.chainSources ? "bg-[#ffd400]" : "bg-white"}`} aria-hidden />
+          </button>
+        ) : null}
+
         {referenceAssetIds.length > 0 ? (
           <div className="space-y-2">
             <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-black/55">
-              Connected images are sent together in wire order.
+              {data.chainSources
+                ? `Chained from ${upstreamPromptCount} upstream prompt${upstreamPromptCount === 1 ? "" : "s"} · sent in wire order.`
+                : "Connected images are sent together in wire order."}
             </div>
             <div className="flex gap-2 overflow-x-auto pb-0.5">
               {referenceAssetIds.map((assetId, index) => (
@@ -308,10 +395,18 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
           </div>
         )}
         {referenceAssetIds.length > capability.maxReferences ? (
-          <p className="font-mono text-[11px] leading-[1.35] text-[#d8421b]">
-            {capability.displayName} only accepts {capability.maxReferences} reference image
-            {capability.maxReferences === 1 ? "" : "s"}. Remove extras before running.
-          </p>
+          data.chainSources ? (
+            <p className="font-mono text-[11px] leading-[1.35] text-black/70">
+              {capability.displayName} caps at {capability.maxReferences} reference image
+              {capability.maxReferences === 1 ? "" : "s"}. First {capability.maxReferences} in
+              wire order will be sent.
+            </p>
+          ) : (
+            <p className="font-mono text-[11px] leading-[1.35] text-[#d8421b]">
+              {capability.displayName} only accepts {capability.maxReferences} reference image
+              {capability.maxReferences === 1 ? "" : "s"}. Remove extras before running.
+            </p>
+          )
         ) : null}
       </Field>
 
@@ -335,8 +430,8 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
       ) : null}
 
       <div className={`relative overflow-hidden border-[3px] border-black bg-[#f9f5e8] ${aspectRatioClass}`}>
-        {latestAssetId ? (
-          <img src={getAssetUrl(latestAssetId)} alt="Latest output" className="h-full w-full object-cover" />
+        {activeAssetId ? (
+          <img src={getAssetUrl(activeAssetId)} alt="Latest output" className="h-full w-full object-cover" />
         ) : (
           <EmptySlot label="Latest output" />
         )}
@@ -344,15 +439,36 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
       </div>
 
       {history.length > 0 ? (
-        <div data-testid="history-strip" className="flex gap-2 overflow-x-auto pb-0.5">
-          {history.map((assetId: string) => (
-            <img
-              key={assetId}
-              src={getAssetUrl(assetId)}
-              alt="Previous run"
-              className="h-12 w-12 shrink-0 border-[3px] border-black object-cover"
-            />
-          ))}
+        <div className="space-y-1.5">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-black/55">
+              History · {data.outputAssetIds.length}
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-black/40">
+              click to restore
+            </span>
+          </div>
+          <div data-testid="history-strip" className="nodrag flex gap-2 overflow-x-auto pb-0.5">
+            {history.map((assetId: string) => {
+              const meta = data.versionMetadata?.[assetId];
+              const promptSnippet = meta?.prompt?.trim().slice(0, 120) ?? "(no snapshot — click to switch image only)";
+              return (
+                <button
+                  key={assetId}
+                  type="button"
+                  onClick={() => selectVersion(assetId)}
+                  title={promptSnippet}
+                  className="group relative h-12 w-12 shrink-0 overflow-hidden border-[3px] border-black bg-white transition hover:-translate-y-[1px] hover:shadow-[3px_3px_0_0_#0a0a0a] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                >
+                  <img
+                    src={getAssetUrl(assetId)}
+                    alt="Previous run"
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              );
+            })}
+          </div>
         </div>
       ) : null}
 

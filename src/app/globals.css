@@ -149,3 +149,19 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.35);
 }
+
+/* Sonner loader escapes its icon box because its built-in rules include
+   `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%)`.
+   With `unstyled: true` on our Toaster, the parent [data-icon] is no longer
+   positioned, so the loader anchors to the toast root. Flatten it here. */
+[data-sonner-toast] [data-icon] .sonner-loader {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  height: 1rem !important;
+  width: 1rem !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

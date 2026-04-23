@@ -91,4 +91,10 @@ export const VISION_MODEL_OPTIONS = [
 ] as const;
 
 export type VisionModel = (typeof VISION_MODEL_OPTIONS)[number]["value"];
+// Typed tuple of VISION_MODEL_OPTIONS values — keeps the literal union
+// alive through zod's z.enum (which erases it when you .map() an array).
+export const VISION_MODEL_VALUES = [
+  "google/gemini-2.5-flash",
+  "openai/gpt-4.1-mini",
+] as const satisfies ReadonlyArray<VisionModel>;
 export const VISION_SLUG = "openrouter/router/vision";

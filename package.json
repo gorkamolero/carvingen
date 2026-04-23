@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "bash scripts/dev-with-tunnel.sh",
+    "dev:local": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint src tests scripts next.config.ts playwright.config.ts vitest.config.ts drizzle.config.ts",

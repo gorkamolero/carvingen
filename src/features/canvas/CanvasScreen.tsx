@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSnapshot } from "valtio";
 
 import { CanvasFlow } from "@/features/canvas/flow/CanvasFlow";
+import { HelpCheatsheet } from "@/features/canvas/help/HelpCheatsheet";
 import { SidebarPalette } from "@/features/canvas/palette/SidebarPalette";
 import { ProjectSwitcher } from "@/features/canvas/projects/ProjectSwitcher";
 import { fetchJson } from "@/lib/api/client";
@@ -29,6 +30,7 @@ type ProjectListItem = {
 export function CanvasScreen() {
   const queryClient = useQueryClient();
   const graph = useSnapshot(graphHistory.value);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const projectsQuery = useQuery({
     queryKey: ["projects"],
@@ -177,6 +179,7 @@ export function CanvasScreen() {
         }}
         onCreate={() => createProjectMutation.mutate()}
         onRename={() => renameProjectMutation.mutate()}
+        onOpenHelp={() => setHelpOpen(true)}
       />
       <div className="flex min-h-0 flex-1">
         <SidebarPalette />
@@ -197,6 +200,7 @@ export function CanvasScreen() {
         </span>
         <span>⌘Z · Undo  ·  ⌘⇧Z · Redo</span>
       </div>
+      {helpOpen && <HelpCheatsheet onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }

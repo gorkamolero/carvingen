@@ -9,6 +9,7 @@ import {
   type OnConnectEnd,
   ReactFlow,
   type ReactFlowInstance,
+  SelectionMode,
 } from "@xyflow/react";
 import { useCallback, useRef } from "react";
 import { useSnapshot } from "valtio";
@@ -152,19 +153,46 @@ export function CanvasFlow() {
         onNodeDragStop={commitGraphInteraction}
         onSelectionDragStop={commitGraphInteraction}
         onConnect={(connection) => {
-          connectNodes(connection);
+          if (!connection.source) {
+            return;
+          }
+
+          // Fan-in multi-connect: if the user drags from one of several
+          // selected nodes to a single target, wire every selected sibling
+          // whose output handle matches the primary. Invalid sibling wires
+          // (wrong handle type, duplicate) are silently rejected by
+          // connectNodes' canConnect check.
+          const primaryOk = connectNodes(connection);
+          if (!primaryOk) {
+            return;
+          }
+
+          const siblings = graph.nodes.filter(
+            (node) => node.selected && node.id !== connection.source,
+          );
+          for (const sibling of siblings) {
+            connectNodes({ ...connection, source: sibling.id });
+          }
         }}
         onConnectEnd={onConnectEnd}
         connectionMode={ConnectionMode.Loose}
         fitView
         minZoom={0.05}
         maxZoom={3}
+        // Figma-style selection: drag on empty canvas = marquee select.
+        // Pan with middle mouse / two-finger trackpad scroll instead.
+        selectionOnDrag
+        panOnDrag={[1, 2]}
+        panOnScroll
+        selectionMode={SelectionMode.Partial}
+        selectionKeyCode="Shift"
+        multiSelectionKeyCode={["Shift", "Meta"]}
         defaultEdgeOptions={{
-          type: "step",
+          type: "default",
           animated: false,
           style: {
             stroke: "#0a0a0a",
-            strokeWidth: 4,
+            strokeWidth: 3,
           },
         }}
         onMoveEnd={(_event, viewport) => {
