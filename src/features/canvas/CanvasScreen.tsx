@@ -52,11 +52,14 @@ export function CanvasScreen() {
   });
 
   const createProjectMutation = useMutation({
-    mutationFn: () =>
-      fetchJson<ProjectGraph>("/api/projects", {
+    mutationFn: () => {
+      const existingCount = (projectsQuery.data?.length ?? 0) + 1;
+      const defaultName = `Untitled ${existingCount}`;
+      return fetchJson<ProjectGraph>("/api/projects", {
         method: "POST",
-        body: JSON.stringify({ name: `Project ${Date.now()}` }),
-      }),
+        body: JSON.stringify({ name: defaultName }),
+      });
+    },
     onSuccess: async (project) => {
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
       hydrateProject(project);
@@ -164,7 +167,7 @@ export function CanvasScreen() {
   const projectItems = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
 
   return (
-    <div className="flex h-screen flex-col bg-[#fafaf5] text-black">
+    <div className="flex h-screen flex-col bg-[#f4efdf] text-black">
       <ProjectSwitcher
         projects={projectItems}
         activeProjectId={graph.activeProjectId}
@@ -179,8 +182,20 @@ export function CanvasScreen() {
         <SidebarPalette />
         <CanvasFlow />
       </div>
-      <div data-testid="save-status" className="border-t-[3px] border-black bg-[#fff6d8] px-4 py-2 font-mono text-xs uppercase">
-        {graph.isSaving ? "Saving…" : graph.lastSavedAt ? "Saved" : "Ready"}
+      <div
+        data-testid="save-status"
+        className="flex items-center justify-between gap-4 border-t-[3px] border-black bg-[#efe8cd] px-5 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/60"
+      >
+        <span className="flex items-center gap-2">
+          <span
+            className={`inline-block h-2 w-2 ${
+              graph.isSaving ? "bg-[#ffd400]" : graph.lastSavedAt ? "bg-[#8cff3e]" : "bg-black/30"
+            }`}
+            aria-hidden
+          />
+          {graph.isSaving ? "Saving" : graph.lastSavedAt ? "Saved" : "Ready"}
+        </span>
+        <span>⌘Z · Undo  ·  ⌘⇧Z · Redo</span>
       </div>
     </div>
   );

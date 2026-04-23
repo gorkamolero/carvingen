@@ -125,8 +125,8 @@ export function CanvasFlow() {
           type: "step",
           animated: false,
           style: {
-            stroke: "#000",
-            strokeWidth: 3,
+            stroke: "#0a0a0a",
+            strokeWidth: 4,
           },
         }}
         onMoveEnd={(_event, viewport) => {
@@ -134,9 +134,9 @@ export function CanvasFlow() {
           commitGraphInteraction();
         }}
       >
-        <Controls />
-        <MiniMap />
-        <Background color="#00000022" gap={18} size={2} />
+        <Controls showInteractive={false} position="bottom-left" />
+        <MiniMap pannable zoomable maskColor="rgba(0,0,0,0.04)" nodeStrokeColor="#0a0a0a" nodeStrokeWidth={3} nodeColor="#ffd400" />
+        <Background color="#0a0a0a33" gap={20} size={1.5} />
       </ReactFlow>
     </div>
   );

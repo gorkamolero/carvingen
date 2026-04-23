@@ -1,19 +1,22 @@
 import type { Metadata } from "next";
-import { Archivo_Black, JetBrains_Mono } from "next/font/google";
+import { Archivo, JetBrains_Mono } from "next/font/google";
 
 import { Providers } from "@/app/providers";
 import { getServerEnv } from "@/lib/env";
 import "./globals.css";
 
-const archivoBlack = Archivo_Black({
-  variable: "--font-archivo-black",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -31,9 +34,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${archivoBlack.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body data-public-url={env.PUBLIC_URL} className="min-h-full bg-[#fafaf5] font-sans text-black">
+      <body data-public-url={env.PUBLIC_URL} className="min-h-full bg-[#f4efdf] font-sans text-[15px] font-medium text-black">
         <Providers>{children}</Providers>
       </body>
     </html>

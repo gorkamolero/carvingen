@@ -1,14 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafaf5;
-  --foreground: #111111;
+  --background: #f4efdf;        /* warm oat cream — page background */
+  --surface: #ffffff;           /* node body surface */
+  --surface-muted: #f9f5e8;     /* subtle inset on empty slots */
+  --ink: #0a0a0a;               /* near-black for edges / text */
+  --ink-soft: #1a1a1a;
+  --ink-mute: #6b6658;
+  --accent-ember: #d8421b;      /* error + input-changed ping */
+  --accent-amber: #ffd400;      /* Prompt */
+  --accent-pink:  #ff6fa8;      /* Image */
+  --accent-orange:#ff8a3d;      /* Vision */
+  --accent-blue:  #3e8cff;      /* Mesh */
+  --accent-green: #8cff3e;      /* Viewer */
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-archivo-black);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-archivo);
   --font-mono: var(--font-jetbrains-mono);
 }
 
@@ -16,11 +26,14 @@ html,
 body {
   min-height: 100%;
   background: var(--background);
-  color: var(--foreground);
+  color: var(--ink);
 }
 
 body {
-  font-family: var(--font-archivo-black), sans-serif;
+  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  font-weight: 500;
+  letter-spacing: -0.005em;
 }
 
 button,
@@ -28,24 +41,111 @@ select,
 input,
 textarea {
   outline: none;
+  font-family: inherit;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+/* React Flow overrides */
 .react-flow__attribution {
   display: none;
 }
 
-.react-flow__controls-button,
-.react-flow__minimap {
-  border: 3px solid #000 !important;
+.react-flow__controls {
+  gap: 4px;
+}
+
+.react-flow__controls-button {
+  border: 3px solid var(--ink) !important;
   border-radius: 0 !important;
-  box-shadow: 4px 4px 0 #000 !important;
+  box-shadow: 4px 4px 0 var(--ink) !important;
+  background: #fff !important;
+  width: 32px !important;
+  height: 32px !important;
+  transition: transform 80ms linear, box-shadow 80ms linear;
+}
+
+.react-flow__controls-button:hover {
+  background: #fff7cc !important;
+}
+
+.react-flow__controls-button:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--ink);
+}
+
+.react-flow__minimap {
+  border: 3px solid var(--ink) !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 var(--ink) !important;
+  background: #fff !important;
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(0, 0, 0, 0.04);
 }
 
 .react-flow__handle {
   border-radius: 0 !important;
+  border: 3px solid var(--ink) !important;
+  background: #fff !important;
+  width: 14px !important;
+  height: 14px !important;
 }
 
+.react-flow__handle:hover {
+  background: var(--accent-amber) !important;
+}
+
+.react-flow__handle-left { left: -9px !important; }
+.react-flow__handle-right { right: -9px !important; }
+
+.react-flow__edge-path {
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+/* Selected state: swap the black hard-shadow for a magenta one so it reads as
+   lifted and highlighted without introducing an outline that fights the shadow. */
 .react-flow__node.selected > div {
-  outline: 3px solid #000;
-  outline-offset: 4px;
+  box-shadow: 6px 6px 0 0 #ff3ea5 !important;
+}
+
+.react-flow__node.dragging > div {
+  box-shadow: 8px 8px 0 0 #0a0a0a !important;
+}
+
+.react-flow__connection-path {
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+
+.react-flow__nodesselection-rect,
+.react-flow__selection {
+  border: 3px dashed var(--ink) !important;
+  background: rgba(255, 212, 0, 0.08) !important;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
 }

@@ -157,10 +157,17 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
   });
 
   const estimate = capability.estimateByResolution[data.resolution] ?? capability.estimateByResolution["1K"];
+  const runDisabled = runMutation.isPending || data.text.trim().length === 0;
+  const changedDot = data.inputsChangedSinceLastRun && !runMutation.isPending;
 
   return (
-    <NodeChrome title="Prompt" accentClassName="bg-[#ffd400]" className="nodrag" testId="prompt-node" nodeId={id}>
-      <Handle data-testid="prompt-image-in" type="target" id="image-in" position={Position.Left} className="!h-4 !w-4 !border-[3px] !border-black !bg-white" />
+    <NodeChrome title="Prompt" accentClassName="bg-[#ffd400]" testId="prompt-node" nodeId={id}>
+      <Handle
+        data-testid="prompt-image-in"
+        type="target"
+        id="image-in"
+        position={Position.Left}
+      />
       <textarea
         data-testid="prompt-textarea"
         value={data.text}
@@ -168,11 +175,11 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
           updatePromptNode(id, { text: event.target.value, inputsChangedSinceLastRun: true });
           markNodeDirty(id);
         }}
-        className="nodrag min-h-28 w-full resize-none border-[3px] border-black bg-white p-2 font-mono text-sm outline-none"
-        placeholder="Describe the carving concept..."
+        className="nodrag block min-h-[96px] w-full resize-none border-[3px] border-black bg-white p-2.5 font-mono text-[13px] font-normal leading-[1.45] outline-none placeholder:text-black/35"
+        placeholder="Describe the carving concept…"
       />
-      <div className="space-y-2">
-        <label className="block text-xs font-black uppercase">Model</label>
+
+      <Field label="Model">
         <select
           data-testid="prompt-model"
           value={data.model}
@@ -188,7 +195,7 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
             });
             markNodeDirty(id);
           }}
-          className="nodrag w-full border-[3px] border-black bg-white p-2 text-sm font-bold"
+          className="nodrag h-9 w-full border-[3px] border-black bg-white px-2.5 text-[13px] font-semibold leading-none"
         >
           {Object.entries(IMAGE_MODEL_CAPABILITIES).map(([model, meta]) => (
             <option key={model} value={model}>
@@ -196,82 +203,144 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
             </option>
           ))}
         </select>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {capability.aspectRatios.map((ratio: (typeof capability.aspectRatios)[number]) => (
-          <button
-            key={ratio}
-            type="button"
-            onClick={() => {
-              updatePromptNode(id, {
-                aspectRatio: ratio,
-                inputsChangedSinceLastRun: true,
-              });
-              markNodeDirty(id);
-            }}
-            className={`border-[3px] border-black px-2 py-1 text-xs font-black ${ratio === data.aspectRatio ? "bg-black text-white" : "bg-white"}`}
-          >
-            {ratio}
-          </button>
-        ))}
-      </div>
-      {capability.resolutions.length > 1 ? (
-        <div className="flex gap-2">
-          {capability.resolutions.map((resolution: (typeof capability.resolutions)[number]) => (
-            <button
-              key={resolution}
-              type="button"
+      </Field>
+
+      <Field label="Aspect">
+        <ChipRow>
+          {capability.aspectRatios.map((ratio: (typeof capability.aspectRatios)[number]) => (
+            <Chip
+              key={ratio}
+              active={ratio === data.aspectRatio}
               onClick={() => {
-                updatePromptNode(id, {
-                  resolution,
-                  inputsChangedSinceLastRun: true,
-                });
+                updatePromptNode(id, { aspectRatio: ratio, inputsChangedSinceLastRun: true });
                 markNodeDirty(id);
               }}
-              className={`border-[3px] border-black px-2 py-1 text-xs font-black ${resolution === data.resolution ? "bg-black text-white" : "bg-white"}`}
             >
-              {resolution}
-            </button>
+              {ratio}
+            </Chip>
           ))}
-        </div>
+        </ChipRow>
+      </Field>
+
+      {capability.resolutions.length > 1 ? (
+        <Field label="Resolution">
+          <ChipRow>
+            {capability.resolutions.map((resolution: (typeof capability.resolutions)[number]) => (
+              <Chip
+                key={resolution}
+                active={resolution === data.resolution}
+                onClick={() => {
+                  updatePromptNode(id, { resolution, inputsChangedSinceLastRun: true });
+                  markNodeDirty(id);
+                }}
+              >
+                {resolution}
+              </Chip>
+            ))}
+          </ChipRow>
+        </Field>
       ) : null}
-      <div className={`relative overflow-hidden border-[3px] border-black bg-[#fff8dc] ${aspectRatioClass}`}>
+
+      <div className={`relative overflow-hidden border-[3px] border-black bg-[#f9f5e8] ${aspectRatioClass}`}>
         {latestAssetId ? (
           <img src={getAssetUrl(latestAssetId)} alt="Latest output" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full min-h-44 items-center justify-center bg-[radial-gradient(circle_at_1px_1px,#000_1px,transparent_0)] [background-size:16px_16px] text-center font-mono text-xs uppercase">
-            Latest output appears here
-          </div>
+          <EmptySlot label="Latest output" />
         )}
-        {runMutation.isPending ? (
-          <div className="absolute inset-0 flex flex-col justify-end bg-[repeating-linear-gradient(45deg,#00000055_0_8px,transparent_8px_16px)] p-2 font-mono text-xs uppercase">
-            {data.runStatus ?? "Running"}
-          </div>
-        ) : null}
+        {runMutation.isPending ? <RunningOverlay label={data.runStatus ?? "Running"} /> : null}
       </div>
-      <div data-testid="history-strip" className="flex gap-2 overflow-x-auto">
-        {history.map((assetId: string) => (
-          <img
-            key={assetId}
-            src={getAssetUrl(assetId)}
-            alt="Previous run"
-            className="h-12 w-12 shrink-0 border-[3px] border-black object-cover"
-          />
-        ))}
-      </div>
-      <div className="space-y-2">
-        <button
-          data-testid="run-button"
-          type="button"
-          disabled={runMutation.isPending || data.text.trim().length === 0}
-          onClick={() => runMutation.mutate()}
-          className="w-full border-[3px] border-black bg-white px-3 py-2 text-left font-black uppercase shadow-[4px_4px_0_#000] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_#000] disabled:cursor-not-allowed disabled:bg-[#e7e2cf] disabled:shadow-none"
-        >
-          {runMutation.isPending ? "… Running" : `Run ${data.inputsChangedSinceLastRun ? "•" : ""} ~$${estimate?.toFixed(2) ?? "0.00"}`}
-        </button>
-        {data.errorMessage ? <p className="font-mono text-xs text-[#d61f1f]">{data.errorMessage}</p> : null}
-      </div>
-      <Handle data-testid="prompt-image-out" type="source" id="image-out" position={Position.Right} className="!h-4 !w-4 !border-[3px] !border-black !bg-white" />
+
+      {history.length > 0 ? (
+        <div data-testid="history-strip" className="flex gap-2 overflow-x-auto pb-0.5">
+          {history.map((assetId: string) => (
+            <img
+              key={assetId}
+              src={getAssetUrl(assetId)}
+              alt="Previous run"
+              className="h-12 w-12 shrink-0 border-[3px] border-black object-cover"
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <button
+        data-testid="run-button"
+        type="button"
+        disabled={runDisabled}
+        onClick={() => runMutation.mutate()}
+        className="flex h-11 w-full items-center justify-between gap-3 border-[3px] border-black bg-[#ffd400] px-3 text-[12px] font-black uppercase tracking-[0.16em] shadow-[4px_4px_0_0_#0a0a0a] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_0_#0a0a0a] disabled:cursor-not-allowed disabled:bg-[#e5dfc9] disabled:text-black/40 disabled:shadow-none"
+      >
+        <span className="flex items-center gap-2">
+          {runMutation.isPending ? "Running…" : "Run"}
+          {changedDot ? <span className="inline-block h-2 w-2 bg-[#d8421b]" aria-hidden /> : null}
+        </span>
+        <span className="font-mono text-[11px] font-medium text-black/70">
+          ~${estimate?.toFixed(2) ?? "0.00"}
+        </span>
+      </button>
+      {data.errorMessage ? (
+        <p className="font-mono text-[11px] leading-[1.3] text-[#d8421b]">{data.errorMessage}</p>
+      ) : null}
+
+      <Handle
+        data-testid="prompt-image-out"
+        type="source"
+        id="image-out"
+        position={Position.Right}
+      />
     </NodeChrome>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] font-black uppercase tracking-[0.18em] text-black/55">{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function ChipRow({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-wrap gap-1.5">{children}</div>;
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active?: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-7 border-[3px] border-black px-2 font-mono text-[11px] font-semibold leading-none tracking-wide ${
+        active ? "bg-black text-white" : "bg-white text-black hover:bg-[#fff7cc]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmptySlot({ label }: { label: string }) {
+  return (
+    <div className="flex h-full min-h-[176px] items-center justify-center bg-[linear-gradient(135deg,transparent_49%,rgba(0,0,0,0.08)_49%_51%,transparent_51%)] bg-[length:14px_14px] text-center font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-black/45">
+      {label}
+    </div>
+  );
+}
+
+function RunningOverlay({ label }: { label: string }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 flex flex-col justify-end bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.28)_0_8px,transparent_8px_16px)] p-2">
+      <span className="inline-block self-start border-[2px] border-black bg-[#ffd400] px-2 py-[2px] font-mono text-[10px] font-bold uppercase tracking-[0.2em]">
+        {label}
+      </span>
+    </div>
   );
 }

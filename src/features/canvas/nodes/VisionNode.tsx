@@ -120,6 +120,9 @@ export function VisionNode({ id, data }: NodeProps<VisionGraphNode>) {
     },
   });
 
+  const runDisabled = runMutation.isPending || data.question.trim().length === 0;
+  const changedDot = data.inputsChangedSinceLastRun && !runMutation.isPending;
+
   return (
     <NodeChrome title="Vision" accentClassName="bg-[#ff8a3d]" testId="vision-node" nodeId={id}>
       <Handle
@@ -127,7 +130,6 @@ export function VisionNode({ id, data }: NodeProps<VisionGraphNode>) {
         type="target"
         id="image-in"
         position={Position.Left}
-        className="!h-4 !w-4 !border-[3px] !border-black !bg-white"
       />
       <textarea
         data-testid="vision-question"
@@ -138,55 +140,67 @@ export function VisionNode({ id, data }: NodeProps<VisionGraphNode>) {
             inputsChangedSinceLastRun: true,
           })
         }
-        className="nodrag min-h-24 w-full resize-none border-[3px] border-black bg-white p-2 font-mono text-sm outline-none"
-        placeholder="Ask about the connected image..."
+        className="nodrag block min-h-[88px] w-full resize-none border-[3px] border-black bg-white p-2.5 font-mono text-[13px] leading-[1.45] outline-none placeholder:text-black/35"
+        placeholder="Ask about the connected image…"
       />
-      <label className="block text-xs font-black uppercase">Model</label>
-      <select
-        data-testid="vision-model"
-        value={data.model}
-        onChange={(event) =>
-          updateVisionNode(id, {
-            model: event.target.value as VisionGraphNode["data"]["model"],
-            inputsChangedSinceLastRun: true,
-          })
-        }
-        className="nodrag w-full border-[3px] border-black bg-white p-2 text-sm font-bold"
-      >
-        {VISION_MODEL_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label} · {option.tagline}
-          </option>
-        ))}
-      </select>
-      <div className="relative min-h-36 overflow-hidden border-[3px] border-black bg-[#fff8dc] p-3">
+      <div className="space-y-1.5">
+        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-black/55">Model</div>
+        <select
+          data-testid="vision-model"
+          value={data.model}
+          onChange={(event) =>
+            updateVisionNode(id, {
+              model: event.target.value as VisionGraphNode["data"]["model"],
+              inputsChangedSinceLastRun: true,
+            })
+          }
+          className="nodrag h-9 w-full border-[3px] border-black bg-white px-2.5 text-[13px] font-semibold leading-none"
+        >
+          {VISION_MODEL_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label} · {option.tagline}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="relative min-h-[128px] overflow-hidden border-[3px] border-black bg-[#f9f5e8] p-3">
         {data.answer ? (
-          <p data-testid="vision-answer" className="whitespace-pre-wrap font-mono text-sm leading-5">
+          <p data-testid="vision-answer" className="whitespace-pre-wrap font-mono text-[12px] leading-[1.5]">
             {data.answer}
           </p>
         ) : (
-          <div className="flex min-h-30 items-center justify-center text-center font-mono text-xs uppercase">
-            Vision answer appears here
+          <div className="flex min-h-[104px] items-center justify-center text-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
+            Answer appears here
           </div>
         )}
         {runMutation.isPending ? (
-          <div className="absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,#00000055_0_8px,transparent_8px_16px)] p-2 font-mono text-xs uppercase">
-            {data.runStatus ?? "Running"}
+          <div className="pointer-events-none absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.28)_0_8px,transparent_8px_16px)] p-2">
+            <span className="inline-block self-start border-[2px] border-black bg-[#ff8a3d] px-2 py-[2px] font-mono text-[10px] font-bold uppercase tracking-[0.2em]">
+              {data.runStatus ?? "Running"}
+            </span>
           </div>
         ) : null}
       </div>
       <button
         data-testid="vision-run-button"
         type="button"
-        disabled={runMutation.isPending || data.question.trim().length === 0}
+        disabled={runDisabled}
         onClick={() => runMutation.mutate()}
-        className="w-full border-[3px] border-black bg-white px-3 py-2 text-left font-black uppercase shadow-[4px_4px_0_#000] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_#000] disabled:cursor-not-allowed disabled:bg-[#e7e2cf] disabled:shadow-none"
+        className="flex h-11 w-full items-center justify-between gap-3 border-[3px] border-black bg-[#ff8a3d] px-3 text-[12px] font-black uppercase tracking-[0.16em] shadow-[4px_4px_0_0_#0a0a0a] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_0_#0a0a0a] disabled:cursor-not-allowed disabled:bg-[#e5d6c6] disabled:text-black/40 disabled:shadow-none"
       >
-        {runMutation.isPending
-          ? "… Running"
-          : `Run ${data.inputsChangedSinceLastRun ? "•" : ""}${data.lastRunCost ? ` ~$${data.lastRunCost.toFixed(4)}` : ""}`}
+        <span className="flex items-center gap-2">
+          {runMutation.isPending ? "Running…" : "Run"}
+          {changedDot ? <span className="inline-block h-2 w-2 bg-[#d8421b]" aria-hidden /> : null}
+        </span>
+        {data.lastRunCost ? (
+          <span className="font-mono text-[10px] font-medium text-black/70">
+            ~${data.lastRunCost.toFixed(4)}
+          </span>
+        ) : null}
       </button>
-      {data.errorMessage ? <p className="font-mono text-xs text-[#d61f1f]">{data.errorMessage}</p> : null}
+      {data.errorMessage ? (
+        <p className="font-mono text-[11px] text-[#d8421b]">{data.errorMessage}</p>
+      ) : null}
     </NodeChrome>
   );
 }

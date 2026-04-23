@@ -139,58 +139,91 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
     },
   });
 
+  const runDisabled = runMutation.isPending || sourceImages.length === 0;
+
   return (
     <NodeChrome title="Mesh" accentClassName="bg-[#3e8cff]" testId="mesh-node" nodeId={id}>
-      <Handle data-testid="mesh-image-in" type="target" id="image-in" position={Position.Left} className="!h-4 !w-4 !border-[3px] !border-black !bg-white" />
-      <div className="flex gap-2">
-        {(["preview", "refine"] as const).map((mode) => (
-          <button
-            key={mode}
-            type="button"
-            onClick={() => updateMeshNode(id, { mode, inputsChangedSinceLastRun: true })}
-            className={`border-[3px] border-black px-2 py-1 text-xs font-black uppercase ${mode === data.mode ? "bg-black text-white" : "bg-white"}`}
-          >
-            {mode}
-          </button>
-        ))}
+      <Handle
+        data-testid="mesh-image-in"
+        type="target"
+        id="image-in"
+        position={Position.Left}
+      />
+      <div className="space-y-1.5">
+        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-black/55">Mode</div>
+        <div className="flex gap-1.5">
+          {(["preview", "refine"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => updateMeshNode(id, { mode, inputsChangedSinceLastRun: true })}
+              className={`h-8 flex-1 border-[3px] border-black px-2 text-[11px] font-black uppercase leading-none tracking-[0.14em] ${
+                mode === data.mode ? "bg-black text-white" : "bg-white text-black hover:bg-[#e3eeff]"
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="relative min-h-44 overflow-hidden border-[3px] border-black bg-[#f3f0e0]">
+
+      <div className="relative aspect-square overflow-hidden border-[3px] border-black bg-[#f9f5e8]">
         {data.thumbnailAssetId ? (
-          <img src={getAssetUrl(data.thumbnailAssetId)} alt="Mesh thumbnail" className="h-44 w-full object-cover" />
+          <img src={getAssetUrl(data.thumbnailAssetId)} alt="Mesh thumbnail" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-44 items-center justify-center font-mono text-xs uppercase">
-            Mesh thumbnail appears here
+          <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,transparent_49%,rgba(0,0,0,0.08)_49%_51%,transparent_51%)] bg-[length:14px_14px] font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
+            Mesh thumbnail
           </div>
         )}
         {runMutation.isPending ? (
-          <div className="absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,#00000055_0_8px,transparent_8px_16px)] p-2 font-mono text-xs uppercase">
-            {data.runStatus ?? "Running"}
+          <div className="pointer-events-none absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.28)_0_8px,transparent_8px_16px)] p-2">
+            <span className="inline-block self-start border-[2px] border-black bg-[#3e8cff] px-2 py-[2px] font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white">
+              {data.runStatus ?? "Running"}
+            </span>
           </div>
         ) : null}
       </div>
+
       <button
         data-testid="mesh-run-button"
         type="button"
         onClick={() => runMutation.mutate()}
-        disabled={runMutation.isPending}
-        className="w-full border-[3px] border-black bg-white px-3 py-2 text-left font-black uppercase shadow-[4px_4px_0_#000] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_#000] disabled:cursor-not-allowed disabled:bg-[#e7e2cf] disabled:shadow-none"
+        disabled={runDisabled}
+        className="flex h-11 w-full items-center justify-between gap-3 border-[3px] border-black bg-[#3e8cff] px-3 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_0_#0a0a0a] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_0_#0a0a0a] disabled:cursor-not-allowed disabled:bg-[#c7d1e2] disabled:text-white/60 disabled:shadow-none"
       >
-        {runMutation.isPending ? "… Running" : "Run"}
+        <span>{runMutation.isPending ? "Running…" : "Run"}</span>
+        <span className="font-mono text-[10px] font-medium text-white/80">
+          {data.mode === "refine" ? "~1m · refine" : "~30s · preview"}
+        </span>
       </button>
-      <div className="flex flex-wrap gap-2">
-        {Object.entries(data.artifactAssetIds).map(([kind, assetId]) => (
-          <a
-            key={kind}
-            href={getAssetUrl(assetId)}
-            className="border-[3px] border-black bg-white px-2 py-1 text-xs font-black uppercase"
-            download
-          >
-            {kind}
-          </a>
-        ))}
-      </div>
-      {data.errorMessage ? <p className="font-mono text-xs text-[#d61f1f]">{data.errorMessage}</p> : null}
-      <Handle data-testid="mesh-glb-out" type="source" id="glb-out" position={Position.Right} className="!h-4 !w-4 !border-[3px] !border-black !bg-white" />
+
+      {Object.keys(data.artifactAssetIds).length > 0 ? (
+        <div className="space-y-1.5">
+          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-black/55">Download</div>
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(data.artifactAssetIds).map(([kind, assetId]) => (
+              <a
+                key={kind}
+                href={getAssetUrl(assetId)}
+                className="h-7 border-[3px] border-black bg-white px-2 font-mono text-[10px] font-bold uppercase leading-[22px] tracking-[0.14em] hover:bg-[#e3eeff]"
+                download
+              >
+                {kind}
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {data.errorMessage ? (
+        <p className="font-mono text-[11px] text-[#d8421b]">{data.errorMessage}</p>
+      ) : null}
+      <Handle
+        data-testid="mesh-glb-out"
+        type="source"
+        id="glb-out"
+        position={Position.Right}
+      />
     </NodeChrome>
   );
 }

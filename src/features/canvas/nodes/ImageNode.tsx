@@ -44,25 +44,27 @@ export function ImageNode({ id, data }: NodeProps<ImageGraphNode>) {
 
   return (
     <NodeChrome title="Image" accentClassName="bg-[#ff6fa8]" testId="image-node" nodeId={id}>
-      <div className="relative min-h-44 overflow-hidden border-[3px] border-black bg-white">
+      <div className="relative aspect-square overflow-hidden border-[3px] border-black bg-white">
         {data.assetId ? (
           <img
             src={data.previewUrl ?? getAssetUrl(data.assetId)}
             alt={data.fileName ?? "Uploaded reference"}
-            className="h-44 w-full object-cover"
+            className="h-full w-full object-cover"
           />
         ) : (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="flex h-44 w-full items-center justify-center bg-[radial-gradient(circle_at_1px_1px,#000_1px,transparent_0)] [background-size:16px_16px] px-4 text-center font-mono text-xs uppercase"
+            className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,transparent_49%,rgba(0,0,0,0.08)_49%_51%,transparent_51%)] bg-[length:14px_14px] text-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/55 hover:bg-[#fff2f6]"
           >
-            {data.isUploading ? "Uploading…" : "Pick a reference image"}
+            {data.isUploading ? "Uploading…" : "Pick a reference"}
           </button>
         )}
         {data.isUploading ? (
-          <div className="absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,#00000055_0_8px,transparent_8px_16px)] p-2 font-mono text-xs uppercase">
-            Uploading…
+          <div className="pointer-events-none absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.28)_0_8px,transparent_8px_16px)] p-2">
+            <span className="inline-block self-start border-[2px] border-black bg-[#ff6fa8] px-2 py-[2px] font-mono text-[10px] font-bold uppercase tracking-[0.2em]">
+              Uploading
+            </span>
           </div>
         ) : null}
       </div>
@@ -79,9 +81,29 @@ export function ImageNode({ id, data }: NodeProps<ImageGraphNode>) {
           }
         }}
       />
-      <p className="font-mono text-xs">{data.fileName ?? "No file selected"}</p>
-      {data.errorMessage ? <p className="font-mono text-xs text-[#d61f1f]">{data.errorMessage}</p> : null}
-      <Handle data-testid="image-out-handle" type="source" id="image-out" position={Position.Right} className="!h-4 !w-4 !border-[3px] !border-black !bg-white" />
+      <div className="flex items-center justify-between gap-3">
+        <span className="truncate font-mono text-[11px] font-medium text-black/70" title={data.fileName ?? undefined}>
+          {data.fileName ?? "No file selected"}
+        </span>
+        {data.assetId ? (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="h-7 shrink-0 border-[3px] border-black bg-white px-2 text-[10px] font-black uppercase tracking-[0.14em] hover:bg-[#fff2f6]"
+          >
+            Replace
+          </button>
+        ) : null}
+      </div>
+      {data.errorMessage ? (
+        <p className="font-mono text-[11px] text-[#d8421b]">{data.errorMessage}</p>
+      ) : null}
+      <Handle
+        data-testid="image-out-handle"
+        type="source"
+        id="image-out"
+        position={Position.Right}
+      />
     </NodeChrome>
   );
 }
