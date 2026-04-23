@@ -12,6 +12,7 @@ import { buildVisionRequest, extractVisionAnswer, pickVisionSlug } from "@/lib/f
 import { getIncomingImageUrls } from "@/lib/graph/selectors";
 import { graphHistory, updateVisionNode } from "@/lib/graph/store";
 import type { VisionNode as VisionGraphNode } from "@/lib/graph/types";
+import { getErrorMessage, showErrorToast, showLoadingToast, showSuccessToast } from "@/lib/notifications/toast";
 
 type FalQueueStatus = {
   status: string;
@@ -101,7 +102,13 @@ export function VisionNode({ id, data }: NodeProps<VisionGraphNode>) {
 
       return parsed;
     },
-    onSuccess: ({ answer, cost }) => {
+    onMutate: () => {
+      return showLoadingToast({
+        title: "Vision running",
+        description: `Reading ${sourceImages.length} image${sourceImages.length === 1 ? "" : "s"}.`,
+      });
+    },
+    onSuccess: ({ answer, cost }, _variables, toastId) => {
       updateVisionNode(id, {
         activeJobId: null,
         answer,
@@ -110,12 +117,20 @@ export function VisionNode({ id, data }: NodeProps<VisionGraphNode>) {
         runStatus: null,
         errorMessage: null,
       });
+      showSuccessToast(toastId, {
+        title: "Vision complete",
+        description: "Answer updated.",
+      });
     },
-    onError: (error) => {
+    onError: (error, _variables, toastId) => {
       updateVisionNode(id, {
         activeJobId: null,
         runStatus: "FAILED",
-        errorMessage: error instanceof Error ? error.message : "Vision run failed.",
+        errorMessage: getErrorMessage(error, "Vision run failed."),
+      });
+      showErrorToast(toastId, {
+        title: "Vision failed",
+        description: getErrorMessage(error, "Vision run failed."),
       });
     },
   });

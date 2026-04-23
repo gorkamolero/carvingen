@@ -12,6 +12,7 @@ import { buildMeshRequest, extractMeshArtifacts, pickMeshSlug } from "@/lib/fal/
 import { graphHistory, markNodeDirty, updateMeshNode } from "@/lib/graph/store";
 import { getIncomingImageUrls } from "@/lib/graph/selectors";
 import type { MeshNode as MeshGraphNode } from "@/lib/graph/types";
+import { getErrorMessage, showErrorToast, showLoadingToast, showSuccessToast } from "@/lib/notifications/toast";
 import { NodeChrome } from "@/features/canvas/nodes/NodeChrome";
 
 type FalQueueStatus = {
@@ -117,7 +118,13 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
 
       return persisted;
     },
-    onSuccess: (assets) => {
+    onMutate: () => {
+      return showLoadingToast({
+        title: "Mesh running",
+        description: data.mode === "refine" ? "Refine pass in progress." : "Preview mesh in progress.",
+      });
+    },
+    onSuccess: (assets, _variables, toastId) => {
       const artifactAssetIds = Object.fromEntries(assets.map((asset) => [asset.kind, asset.assetId]));
       updateMeshNode(id, {
         activeJobId: null,
@@ -129,12 +136,20 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
         errorMessage: null,
       });
       markNodeDirty(id);
+      showSuccessToast(toastId, {
+        title: "Mesh complete",
+        description: artifactAssetIds.glb ? "3D files are ready to inspect." : "Artifacts are ready.",
+      });
     },
-    onError: (error) => {
+    onError: (error, _variables, toastId) => {
       updateMeshNode(id, {
         activeJobId: null,
         runStatus: "FAILED",
-        errorMessage: error instanceof Error ? error.message : "Mesh run failed.",
+        errorMessage: getErrorMessage(error, "Mesh run failed."),
+      });
+      showErrorToast(toastId, {
+        title: "Mesh failed",
+        description: getErrorMessage(error, "Mesh run failed."),
       });
     },
   });

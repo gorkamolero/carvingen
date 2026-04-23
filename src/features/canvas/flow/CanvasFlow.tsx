@@ -14,6 +14,7 @@ import { useCallback, useRef } from "react";
 import { useSnapshot } from "valtio";
 
 import { nodeTypes } from "@/features/canvas/flow/nodeTypes";
+import { uploadImageAsset } from "@/lib/assets/upload-client";
 import {
   addCanvasNode,
   addConnectedPromptFromSource,
@@ -26,6 +27,7 @@ import {
   updateViewport,
 } from "@/lib/graph/store";
 import type { CarvingEdge, CarvingNode } from "@/lib/graph/types";
+import { getErrorMessage, showErrorToast, showLoadingToast, showSuccessToast } from "@/lib/notifications/toast";
 
 export function CanvasFlow() {
   const graph = useSnapshot(graphHistory.value);
@@ -58,26 +60,31 @@ export function CanvasFlow() {
         isUploading: true,
         fileName: file.name,
       });
-
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch("/api/assets/upload", {
-        method: "POST",
-        body: formData,
+      const toastId = showLoadingToast({
+        title: "Uploading dropped image",
+        description: file.name,
       });
-      const payload = (await response.json()) as { assetId?: string; url?: string; error?: string };
 
-      if (response.ok && payload.assetId) {
+      try {
+        const payload = await uploadImageAsset(file);
         updateImageNode(node.id, {
           assetId: payload.assetId,
           previewUrl: payload.url ?? null,
           isUploading: false,
           errorMessage: null,
         });
-      } else {
+        showSuccessToast(toastId, {
+          title: "Image added to canvas",
+          description: file.name,
+        });
+      } catch (error) {
         updateImageNode(node.id, {
           isUploading: false,
-          errorMessage: payload.error ?? "Upload failed.",
+          errorMessage: getErrorMessage(error, "Upload failed."),
+        });
+        showErrorToast(toastId, {
+          title: "Drop upload failed",
+          description: getErrorMessage(error, "Upload failed."),
         });
       }
     }

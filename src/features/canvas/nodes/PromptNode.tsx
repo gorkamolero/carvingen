@@ -11,8 +11,9 @@ import { fetchJson } from "@/lib/api/client";
 import { buildImageRequest, pickImageSlug } from "@/lib/fal/image";
 import { IMAGE_MODEL_CAPABILITIES, type ImageModelBase, type ImageResolution } from "@/lib/fal/models";
 import { graphHistory, markNodeDirty, updatePromptNode } from "@/lib/graph/store";
-import { getIncomingImageUrls } from "@/lib/graph/selectors";
+import { getIncomingImageAssetIds, getIncomingImageUrls } from "@/lib/graph/selectors";
 import type { PromptNode as PromptGraphNode } from "@/lib/graph/types";
+import { getErrorMessage, showErrorToast, showLoadingToast, showSuccessToast } from "@/lib/notifications/toast";
 import { NodeChrome } from "@/features/canvas/nodes/NodeChrome";
 
 type FalQueueStatus = {
@@ -32,6 +33,11 @@ const ASPECT_RATIO_CLASS_BY_VALUE = {
 export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
   const graph = useSnapshot(graphHistory.value);
   const references = getIncomingImageUrls(
+    id,
+    graph.nodes as unknown as PromptGraphNode[],
+    graph.edges as unknown as import("@/lib/graph/types").CarvingEdge[],
+  );
+  const referenceAssetIds = getIncomingImageAssetIds(
     id,
     graph.nodes as unknown as PromptGraphNode[],
     graph.edges as unknown as import("@/lib/graph/types").CarvingEdge[],
@@ -137,7 +143,16 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
 
       return persisted.assetId;
     },
-    onSuccess: (assetId) => {
+    onMutate: () => {
+      return showLoadingToast({
+        title: "Prompt running",
+        description:
+          referenceAssetIds.length > 0
+            ? `${referenceAssetIds.length} reference image${referenceAssetIds.length === 1 ? "" : "s"}`
+            : "Text-only generation",
+      });
+    },
+    onSuccess: (assetId, _variables, toastId) => {
       updatePromptNode(id, {
         activeJobId: null,
         outputAssetIds: [...data.outputAssetIds, assetId],
@@ -146,12 +161,20 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
         errorMessage: null,
       });
       markNodeDirty(id);
+      showSuccessToast(toastId, {
+        title: "Prompt complete",
+        description: "New image added to history.",
+      });
     },
-    onError: (error) => {
+    onError: (error, _variables, toastId) => {
       updatePromptNode(id, {
         activeJobId: null,
         runStatus: "FAILED",
-        errorMessage: error instanceof Error ? error.message : "Prompt run failed.",
+        errorMessage: getErrorMessage(error, "Prompt run failed."),
+      });
+      showErrorToast(toastId, {
+        title: "Prompt failed",
+        description: getErrorMessage(error, "Prompt run failed."),
       });
     },
   });
@@ -185,11 +208,16 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
           value={data.model}
           onChange={(event) => {
             const model = event.target.value as ImageModelBase;
-            const nextResolution = IMAGE_MODEL_CAPABILITIES[model].resolutions.includes(data.resolution)
+            const nextCapability = IMAGE_MODEL_CAPABILITIES[model];
+            const nextResolution = nextCapability.resolutions.includes(data.resolution)
               ? data.resolution
               : "1K";
+            const nextAspectRatio = nextCapability.aspectRatios.includes(data.aspectRatio)
+              ? data.aspectRatio
+              : nextCapability.aspectRatios[0];
             updatePromptNode(id, {
               model,
+              aspectRatio: nextAspectRatio,
               resolution: nextResolution as ImageResolution,
               inputsChangedSinceLastRun: true,
             });
@@ -220,6 +248,46 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
             </Chip>
           ))}
         </ChipRow>
+      </Field>
+
+      <Field
+        label={`References ${referenceAssetIds.length > 0 ? `(${referenceAssetIds.length}/${capability.maxReferences})` : ""}`}
+      >
+        {referenceAssetIds.length > 0 ? (
+          <div className="space-y-2">
+            <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-black/55">
+              Connected images are sent together in wire order.
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-0.5">
+              {referenceAssetIds.map((assetId, index) => (
+                <div
+                  key={`${assetId}-${index}`}
+                  className="relative h-14 w-14 shrink-0 overflow-hidden border-[3px] border-black bg-[#f3efe2]"
+                  title={`Reference ${index + 1}`}
+                >
+                  <img
+                    src={getAssetUrl(assetId)}
+                    alt={`Reference ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute left-0 top-0 border-r-[3px] border-b-[3px] border-black bg-[#fffdf5] px-1 py-0.5 text-[10px] font-black leading-none">
+                    {index + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="border-[3px] border-dashed border-black/35 bg-[#f7f2e0] px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-black/55">
+            Connect up to {capability.maxReferences} reference images.
+          </div>
+        )}
+        {referenceAssetIds.length > capability.maxReferences ? (
+          <p className="font-mono text-[11px] leading-[1.35] text-[#d8421b]">
+            {capability.displayName} only accepts {capability.maxReferences} reference image
+            {capability.maxReferences === 1 ? "" : "s"}. Remove extras before running.
+          </p>
+        ) : null}
       </Field>
 
       {capability.resolutions.length > 1 ? (

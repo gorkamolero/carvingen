@@ -5,7 +5,9 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useRef } from "react";
 
 import { getAssetUrl } from "@/lib/assets/url";
+import { uploadImageAsset } from "@/lib/assets/upload-client";
 import { updateImageNode } from "@/lib/graph/store";
+import { getErrorMessage, showErrorToast, showLoadingToast, showSuccessToast } from "@/lib/notifications/toast";
 import type { ImageNode as ImageGraphNode } from "@/lib/graph/types";
 import { NodeChrome } from "@/features/canvas/nodes/NodeChrome";
 
@@ -14,32 +16,34 @@ export function ImageNode({ id, data }: NodeProps<ImageGraphNode>) {
 
   async function upload(file: File) {
     updateImageNode(id, { isUploading: true, errorMessage: null });
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/assets/upload", {
-      method: "POST",
-      body: formData,
+    const toastId = showLoadingToast({
+      title: "Uploading image",
+      description: file.name,
     });
 
-    const payload = (await response.json()) as { assetId?: string; url?: string; error?: string };
-
-    if (!response.ok || !payload.assetId || !payload.url) {
+    try {
+      const payload = await uploadImageAsset(file);
+      updateImageNode(id, {
+        assetId: payload.assetId,
+        previewUrl: payload.url,
+        fileName: file.name,
+        isUploading: false,
+        errorMessage: null,
+      });
+      showSuccessToast(toastId, {
+        title: "Image ready",
+        description: file.name,
+      });
+    } catch (error) {
       updateImageNode(id, {
         isUploading: false,
-        errorMessage: payload.error ?? "Upload failed.",
+        errorMessage: getErrorMessage(error, "Upload failed."),
       });
-      return;
+      showErrorToast(toastId, {
+        title: "Upload failed",
+        description: getErrorMessage(error, "Upload failed."),
+      });
     }
-
-    updateImageNode(id, {
-      assetId: payload.assetId,
-      previewUrl: payload.url,
-      fileName: file.name,
-      isUploading: false,
-      errorMessage: null,
-    });
   }
 
   return (
