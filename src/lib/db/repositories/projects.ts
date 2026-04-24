@@ -15,7 +15,7 @@ import { ApiError } from "@/lib/http/errors";
 export async function listProjects() {
   ensureDatabase();
   const rows = await db.query.projects.findMany({
-    orderBy: (table, { desc }) => [desc(table.updatedAt)],
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
   });
 
   return rows.map((row) => ({
@@ -152,9 +152,13 @@ export async function saveProjectGraph(input: ProjectGraph) {
 }
 
 export async function getOrCreateInitialProject() {
-  const projectList = await listProjects();
-  if (projectList.length > 0) {
-    return loadProject(projectList[0].id);
+  ensureDatabase();
+  const mostRecent = await db.query.projects.findFirst({
+    orderBy: (table, { desc }) => [desc(table.updatedAt)],
+  });
+
+  if (mostRecent) {
+    return loadProject(mostRecent.id);
   }
 
   return createProject("Untitled project");
