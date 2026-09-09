@@ -11,6 +11,13 @@ const serverEnvSchema = z.object({
   ASSET_STORAGE_PATH: z.string().min(1).default("./outputs"),
   DATABASE_PATH: z.string().min(1).default("./carvingen.sqlite"),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(25 * 1024 * 1024),
+  MAX_REMOTE_ASSET_BYTES: z.coerce.number().int().positive().default(100 * 1024 * 1024),
+  REMOTE_ASSET_ALLOWED_HOSTS: z
+    .string()
+    .default("fal.media,v2.fal.media,v3.fal.media,storage.googleapis.com,cdn.meshy.ai,assets.meshy.ai"),
+  FAL_PROXY_ALLOW_UNAUTHENTICATED: z
+    .preprocess((value) => parseBooleanEnv(value), z.boolean())
+    .default(false),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema> & {
@@ -31,6 +38,11 @@ export function getServerEnv(): ServerEnv {
     ASSET_STORAGE_PATH: process.env.ASSET_STORAGE_PATH ?? "./outputs",
     DATABASE_PATH: process.env.DATABASE_PATH ?? "./carvingen.sqlite",
     MAX_UPLOAD_BYTES: process.env.MAX_UPLOAD_BYTES ?? 25 * 1024 * 1024,
+    MAX_REMOTE_ASSET_BYTES: process.env.MAX_REMOTE_ASSET_BYTES ?? 100 * 1024 * 1024,
+    REMOTE_ASSET_ALLOWED_HOSTS:
+      process.env.REMOTE_ASSET_ALLOWED_HOSTS ??
+      "fal.media,v2.fal.media,v3.fal.media,storage.googleapis.com,cdn.meshy.ai,assets.meshy.ai",
+    FAL_PROXY_ALLOW_UNAUTHENTICATED: process.env.FAL_PROXY_ALLOW_UNAUTHENTICATED ?? false,
   });
 
   if (!parsed.success) {
@@ -68,4 +80,26 @@ export function getFalKey() {
   }
 
   return env.FAL_KEY;
+}
+
+function parseBooleanEnv(value: unknown) {
+  if (value === undefined || value === null || value === "") {
+    return false;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return value;
 }

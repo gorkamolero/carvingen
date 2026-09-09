@@ -9,17 +9,26 @@ export async function dropPaletteNode(
   nodeType: "prompt" | "image" | "mesh" | "viewer" | "vision",
   point: { x: number; y: number } = { x: 360, y: 240 },
 ) {
-  const dataTransfer = await page.evaluateHandle((type) => {
-    const transfer = new DataTransfer();
-    transfer.setData("application/carvingen-node", JSON.stringify({ nodeType: type }));
-    return transfer;
-  }, nodeType);
-
-  await page.dispatchEvent("[data-testid='canvas-flow']", "drop", {
-    dataTransfer,
-    clientX: point.x,
-    clientY: point.y,
-  });
+  await page.waitForLoadState("networkidle");
+  await page.getByTestId("canvas-flow").evaluate(
+    (element, payload) => {
+      const transfer = new DataTransfer();
+      transfer.setData("application/carvingen-node", JSON.stringify({ nodeType: payload.nodeType }));
+      for (const type of ["dragover", "drop"]) {
+        element.dispatchEvent(
+          new DragEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            clientX: payload.point.x,
+            clientY: payload.point.y,
+            dataTransfer: transfer,
+          }),
+        );
+      }
+    },
+    { nodeType, point },
+  );
+  await page.getByRole("button", { name: "Fit View" }).click();
 }
 
 export async function dropImageFile(
@@ -45,7 +54,19 @@ export async function dropImageFile(
   });
 }
 
-export async function waitForSaved(page: Page) {
+export async function waitForSaved(page: Page, expectedText?: string) {
+  await page.waitForResponse(
+    (response) => {
+      const request = response.request();
+      return (
+        request.method() === "POST" &&
+        response.url().includes("/api/projects/") &&
+        response.url().endsWith("/save") &&
+        response.ok() &&
+        (!expectedText || (request.postData() ?? "").includes(expectedText))
+      );
+    },
+  );
   await expect(page.getByTestId("save-status")).toHaveText(/Saved|Ready/);
 }
 

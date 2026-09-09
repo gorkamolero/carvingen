@@ -147,6 +147,7 @@ export function CanvasScreen() {
     graph.edges,
     graph.viewport,
     graph.projectsLoaded,
+    graph.revision,
     queryClient,
   ]);
 

@@ -1,0 +1,47 @@
+{
+  "project": {
+    "name": "Seedance image to video",
+    "mode": "create"
+  },
+  "assets": [
+    {
+      "id": "front",
+      "path": "./examples/assets/front.png",
+      "kind": "image"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "image_front",
+      "type": "image",
+      "position": { "x": 120, "y": 180 },
+      "asset": "front"
+    },
+    {
+      "id": "video_seedance",
+      "type": "video",
+      "position": { "x": 500, "y": 160 },
+      "run": true,
+      "data": {
+        "model": "seedance-2.0",
+        "mode": "image",
+        "tier": "fast",
+        "text": "Slow cinematic orbit around the carving, soft studio light, subtle handmade texture",
+        "aspectRatio": "16:9",
+        "resolution": "720p",
+        "duration": "8",
+        "generateAudio": true,
+        "seed": null
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "image_front",
+      "sourceHandle": "image-out",
+      "target": "video_seedance",
+      "targetHandle": "image-in"
+    }
+  ],
+  "viewport": { "x": 0, "y": 0, "zoom": 1 }
+}

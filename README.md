@@ -18,8 +18,55 @@ Carvingen replaces the chat transcript with a **spatial, branching canvas**. Eac
 6. When a concept is ready, connect the Prompt's output to a **Mesh node** (Meshy v6 image-to-3D via fal). Hit Run. GLB + FBX + USDZ + thumbnail land about a minute later, each with a download button.
 7. Wire the Mesh into a **Viewer node** → full-screen `<model-viewer>` with orbit/zoom, Quest-ready `.glb` download.
 
-Cmd+Z / Cmd+Shift+Z undo/redo every graph mutation — connect/disconnect, edit, model change, delete.
+Cmd+Z / Cmd+Shift+Z undo/redo every graph mutation - connect/disconnect, edit, model change, delete.
 
-## Status
+## Technical shape
 
-Spec stage. No code yet. See `docs/` for the full spec.
+- Next.js 16, React 19, React Flow, Valtio, TanStack Query, SQLite/Drizzle, and local filesystem asset persistence.
+- fal.ai-backed image, vision, video, and Meshy image-to-3D workflows through one server-side provider boundary.
+- Prompt, image, mesh, video, vision, and viewer node types with graph serialization and workflow-runner support.
+- Unit tests cover graph serialization, connection rules, provider request builders, and workflow execution paths.
+
+## Local development
+
+```bash
+pnpm install
+pnpm dev:local
+```
+
+Provider-backed generation requires a local `.env.local` with `FAL_KEY`. Local state defaults to `./carvingen.sqlite` and `./outputs/`; both are ignored because they can contain private prompts, generated media, and provider outputs.
+
+For local provider-backed development, set:
+
+```bash
+FAL_PROXY_ALLOW_UNAUTHENTICATED=true
+MAX_REMOTE_ASSET_BYTES=104857600
+REMOTE_ASSET_ALLOWED_HOSTS=fal.media,v2.fal.media,v3.fal.media,storage.googleapis.com,cdn.meshy.ai,assets.meshy.ai
+```
+
+Keep `FAL_PROXY_ALLOW_UNAUTHENTICATED=false` for any public-demo or deployed recruiter environment. The fal proxy allowlists only the image, mesh, video, and vision endpoints Carvingen uses, and remote asset persistence accepts only expected provider/CDN hosts, known asset kinds, matching MIME types, and bounded file sizes.
+
+Useful checks:
+
+```bash
+pnpm test
+pnpm lint
+pnpm build
+```
+
+## Portfolio demo
+
+`/portfolio-demo` is a public-safe, fixture-backed proof route for recruiters. It renders the canvas workflow with Image, Prompt, Mesh, and Viewer nodes, but it uses inline fake SVG assets instead of local project data, generated outputs, provider files, or client media.
+
+The route proves the graph shape, node taxonomy, visual workflow, and 3D handoff surface. It deliberately withholds real provider execution, local SQLite state, private prompts, generated media, and provider-spend controls. The run controls are disabled and the e2e test asserts the route does not call `/api/projects`, `/api/jobs`, `/api/fal`, or `/api/assets/persist`.
+
+Run it locally with:
+
+```bash
+pnpm dev:local
+open http://localhost:3001/portfolio-demo
+```
+
+## Publication status
+
+This repo is not ready to make public as-is. Before any visibility change, scrub local/generated artifacts, keep `.env.local`, SQLite files, `outputs/`, `output/`, and `tmp/` out of source control, and review example workflows for private prompts or third-party media.

@@ -32,6 +32,7 @@ type GraphState = {
   projectsLoaded: boolean;
   isSaving: boolean;
   lastSavedAt: number | null;
+  revision: number;
 };
 
 export const graphHistory = proxyWithHistory<GraphState>({
@@ -43,10 +44,16 @@ export const graphHistory = proxyWithHistory<GraphState>({
   projectsLoaded: false,
   isSaving: false,
   lastSavedAt: null,
+  revision: 0,
 });
 
 function commitHistory() {
+  bumpRevision();
   graphHistory.saveHistory();
+}
+
+function bumpRevision() {
+  graphHistory.value.revision += 1;
 }
 
 export function hydrateProject(graph: ProjectGraph) {
@@ -56,6 +63,7 @@ export function hydrateProject(graph: ProjectGraph) {
   graphHistory.value.edges = graph.edges;
   graphHistory.value.viewport = graph.viewport;
   graphHistory.value.projectsLoaded = true;
+  graphHistory.value.revision = 0;
   commitHistory();
 }
 
@@ -173,6 +181,7 @@ export function updatePromptNode(nodeId: string, patch: Partial<PromptNodeData>)
       ? { ...node, data: { ...node.data, ...patch } }
       : node,
   ) as CarvingNode[];
+  bumpRevision();
 }
 
 export function updateImageNode(nodeId: string, patch: Partial<ImageNodeData>) {
@@ -181,6 +190,7 @@ export function updateImageNode(nodeId: string, patch: Partial<ImageNodeData>) {
       ? { ...node, data: { ...node.data, ...patch } }
       : node,
   ) as CarvingNode[];
+  bumpRevision();
 }
 
 export function updateMeshNode(nodeId: string, patch: Partial<MeshNodeData>) {
@@ -189,6 +199,7 @@ export function updateMeshNode(nodeId: string, patch: Partial<MeshNodeData>) {
       ? { ...node, data: { ...node.data, ...patch } }
       : node,
   ) as CarvingNode[];
+  bumpRevision();
 }
 
 export function updateViewerNode(nodeId: string, patch: Partial<ViewerNodeData>) {
@@ -197,6 +208,7 @@ export function updateViewerNode(nodeId: string, patch: Partial<ViewerNodeData>)
       ? { ...node, data: { ...node.data, ...patch } }
       : node,
   ) as CarvingNode[];
+  bumpRevision();
 }
 
 export function updateVisionNode(nodeId: string, patch: Partial<VisionNodeData>) {
@@ -205,6 +217,7 @@ export function updateVisionNode(nodeId: string, patch: Partial<VisionNodeData>)
       ? { ...node, data: { ...node.data, ...patch } }
       : node,
   ) as CarvingNode[];
+  bumpRevision();
 }
 
 export function markNodeDirty(nodeId: string) {
@@ -213,6 +226,7 @@ export function markNodeDirty(nodeId: string) {
     graphHistory.value.nodes,
     graphHistory.value.edges,
   );
+  bumpRevision();
 }
 
 export function undo() {

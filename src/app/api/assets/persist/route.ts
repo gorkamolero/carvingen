@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-import { persistRemoteAsset } from "@/lib/storage/persist-remote";
+import { isAllowedPersistedKind, persistRemoteAsset } from "@/lib/storage/persist-remote";
 import { ApiError } from "@/lib/http/errors";
 import { jsonError, jsonOk, parseJson } from "@/lib/http/json";
 
 const persistSchema = z.object({
   sourceUrl: z.url(),
-  kind: z.string(),
+  kind: z.string().refine(isAllowedPersistedKind, "Unsupported remote asset kind."),
   jobId: z.string().optional(),
 });
 

@@ -1,0 +1,23 @@
+{
+  "project": {
+    "name": "Workflow provider smoke",
+    "mode": "create"
+  },
+  "nodes": [
+    {
+      "id": "prompt_smoke",
+      "type": "prompt",
+      "position": { "x": 160, "y": 160 },
+      "run": true,
+      "data": {
+        "text": "A small hand-carved walnut raven token on a plain cream background",
+        "model": "fal-ai/nano-banana-2",
+        "aspectRatio": "1:1",
+        "resolution": "1K",
+        "seed": null
+      }
+    }
+  ],
+  "edges": [],
+  "viewport": { "x": 0, "y": 0, "zoom": 1 }
+}

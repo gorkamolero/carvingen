@@ -9,7 +9,7 @@ test("creates a prompt node, persists text, and restores after reload", async ({
   await expect(page.getByTestId("prompt-node")).toHaveCount(1);
 
   await page.getByTestId("prompt-textarea").fill("A walnut raven carving with lunar motifs");
-  await waitForSaved(page);
+  await waitForSaved(page, "A walnut raven carving with lunar motifs");
 
   await page.reload();
 

@@ -1,0 +1,46 @@
+{
+  "project": {
+    "name": "Veo reference to video",
+    "mode": "create"
+  },
+  "assets": [
+    { "id": "ref_1", "path": "./examples/assets/reference-1.png", "kind": "image" },
+    { "id": "ref_2", "path": "./examples/assets/reference-2.png", "kind": "image" }
+  ],
+  "nodes": [
+    {
+      "id": "image_ref_1",
+      "type": "image",
+      "position": { "x": 120, "y": 120 },
+      "asset": "ref_1"
+    },
+    {
+      "id": "image_ref_2",
+      "type": "image",
+      "position": { "x": 120, "y": 420 },
+      "asset": "ref_2"
+    },
+    {
+      "id": "video_veo",
+      "type": "video",
+      "position": { "x": 520, "y": 220 },
+      "run": true,
+      "data": {
+        "model": "veo3.1-fast-reference",
+        "mode": "reference",
+        "tier": "fast",
+        "text": "Use the connected references as consistent subject guides. Create a clean studio turntable shot with gentle camera motion.",
+        "aspectRatio": "16:9",
+        "resolution": "1080p",
+        "duration": "8s",
+        "generateAudio": true,
+        "seed": null
+      }
+    }
+  ],
+  "edges": [
+    { "source": "image_ref_1", "sourceHandle": "image-out", "target": "video_veo", "targetHandle": "image-in" },
+    { "source": "image_ref_2", "sourceHandle": "image-out", "target": "video_veo", "targetHandle": "image-in" }
+  ],
+  "viewport": { "x": 0, "y": 0, "zoom": 1 }
+}

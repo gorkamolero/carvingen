@@ -1,0 +1,36 @@
+{
+  "project": {
+    "name": "Hunyuan image to 3D",
+    "mode": "create"
+  },
+  "assets": [
+    { "id": "front", "path": "./examples/assets/front.png", "kind": "image" },
+    { "id": "left", "path": "./examples/assets/left.png", "kind": "image" },
+    { "id": "back", "path": "./examples/assets/back.png", "kind": "image" }
+  ],
+  "nodes": [
+    { "id": "image_front", "type": "image", "position": { "x": 120, "y": 120 }, "asset": "front" },
+    { "id": "image_left", "type": "image", "position": { "x": 120, "y": 420 }, "asset": "left" },
+    { "id": "image_back", "type": "image", "position": { "x": 120, "y": 720 }, "asset": "back" },
+    {
+      "id": "mesh_hunyuan",
+      "type": "mesh",
+      "position": { "x": 540, "y": 240 },
+      "run": true,
+      "data": {
+        "provider": "hunyuan",
+        "mode": "preview",
+        "hunyuanViewSlots": ["front", "left", "back"],
+        "hunyuanGenerateType": "Normal",
+        "hunyuanEnablePbr": true,
+        "hunyuanFaceCount": 500000
+      }
+    }
+  ],
+  "edges": [
+    { "source": "image_front", "sourceHandle": "image-out", "target": "mesh_hunyuan", "targetHandle": "image-in" },
+    { "source": "image_left", "sourceHandle": "image-out", "target": "mesh_hunyuan", "targetHandle": "image-in" },
+    { "source": "image_back", "sourceHandle": "image-out", "target": "mesh_hunyuan", "targetHandle": "image-in" }
+  ],
+  "viewport": { "x": 0, "y": 0, "zoom": 1 }
+}

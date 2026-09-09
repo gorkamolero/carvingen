@@ -1,5 +1,5 @@
-import { createRouteHandler } from "@fal-ai/server-proxy/nextjs";
+import { falProxyRouteHandler } from "@/lib/fal/proxy-config";
 
 export const runtime = "nodejs";
 
-export const { GET, POST, PUT } = createRouteHandler();
+export const { GET, POST, PUT } = falProxyRouteHandler;

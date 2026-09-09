@@ -7,7 +7,7 @@ test("keeps projects isolated when switching", async ({ page }) => {
 
   await dropPaletteNode(page, "prompt");
   await page.getByTestId("prompt-textarea").fill("First project prompt");
-  await waitForSaved(page);
+  await waitForSaved(page, "First project prompt");
 
   const firstProjectName = await page.getByTestId("project-switcher").inputValue();
 
@@ -17,7 +17,7 @@ test("keeps projects isolated when switching", async ({ page }) => {
 
   await dropPaletteNode(page, "prompt");
   await page.getByTestId("prompt-textarea").fill("Second project prompt");
-  await waitForSaved(page);
+  await waitForSaved(page, "Second project prompt");
 
   await page.getByTestId("project-switcher").selectOption(firstProjectName);
 

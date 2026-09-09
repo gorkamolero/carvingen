@@ -17,7 +17,9 @@
 /.next/
 /out/
 /test-results
+/output
 /outputs
+/tmp
 /Users
 /*.sqlite
 /*.sqlite-shm
