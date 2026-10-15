@@ -16,6 +16,8 @@ const BASE_PERSISTED_KINDS = [
   "fbx",
   "usdz",
   "obj",
+  "mtl",
+  "texture",
   "stl",
   "video",
   "animation-glb",
@@ -131,7 +133,7 @@ function validateBufferedSize(buffer: Buffer, maxBytes: number) {
 function validateContentType(kind: PersistedAssetKind, mimeType: string) {
   const normalizedMime = mimeType.split(";")[0]?.trim().toLowerCase() ?? "";
 
-  if (kind === "image" || kind === "thumbnail" || kind.startsWith("texture-")) {
+  if (kind === "image" || kind === "thumbnail" || kind === "texture" || kind.startsWith("texture-")) {
     if (normalizedMime.startsWith("image/")) {
       return;
     }
@@ -151,6 +153,7 @@ function validateContentType(kind: PersistedAssetKind, mimeType: string) {
       "fbx",
       "usdz",
       "obj",
+      "mtl",
       "stl",
       "animation-glb",
       "animation-fbx",
@@ -161,7 +164,9 @@ function validateContentType(kind: PersistedAssetKind, mimeType: string) {
     if (
       normalizedMime.startsWith("model/") ||
       normalizedMime === "application/octet-stream" ||
-      normalizedMime === "application/x-tgif"
+      normalizedMime === "application/x-tgif" ||
+      normalizedMime === "application/vnd.autodesk.fbx" ||
+      ((kind === "obj" || kind === "mtl") && normalizedMime === "text/plain")
     ) {
       return;
     }

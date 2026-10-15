@@ -6,9 +6,6 @@ import { extension, lookup } from "mime-types";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { createAssetRecord, getAssetBySha } from "@/lib/db/repositories/assets";
-import { completeJob, createJob, markJobRunning } from "@/lib/db/repositories/jobs";
-import { createProject, loadProject, saveProjectGraph } from "@/lib/db/repositories/projects";
 import { getServerEnv } from "@/lib/env";
 import { buildImageRequest, pickImageSlug } from "@/lib/fal/image";
 import { buildMeshRequest, extractMeshArtifacts, pickMeshSlug } from "@/lib/fal/mesh";
@@ -31,7 +28,6 @@ import {
 } from "@/lib/graph/types";
 import { ApiError } from "@/lib/http/errors";
 import { getAssetUrl } from "@/lib/assets/url";
-import { persistRemoteAsset } from "@/lib/storage/persist-remote";
 import { writeFileIfMissing } from "@/lib/storage/files";
 import { sha256 } from "@/lib/storage/hash";
 import { buildAssetPath } from "@/lib/storage/paths";
@@ -214,6 +210,7 @@ export async function runWorkflow(workflow: WorkflowDefinition, options: Workflo
     } satisfies WorkflowSummary;
   }
 
+  const { saveProjectGraph } = await import("@/lib/db/repositories/projects");
   await saveProjectGraph(graph);
 
   const context: RunContext = {
@@ -249,6 +246,7 @@ export async function runWorkflow(workflow: WorkflowDefinition, options: Workflo
 }
 
 async function resolveProject(workflow: WorkflowDefinition) {
+  const { createProject, loadProject } = await import("@/lib/db/repositories/projects");
   if (workflow.project.mode === "update") {
     if (!workflow.project.id) {
       throw new ApiError(400, "project.id is required when project.mode is update.");
@@ -387,6 +385,7 @@ function createDryRunAssets(assets: WorkflowAsset[], publicUrl: string) {
 }
 
 async function uploadLocalImage(path: string) {
+  const { createAssetRecord, getAssetBySha } = await import("@/lib/db/repositories/assets");
   const buffer = await readFile(path);
   const mimeType = lookup(path) || "application/octet-stream";
   const file = new File([buffer], basename(path), { type: mimeType });
@@ -498,6 +497,8 @@ async function runNode(context: RunContext, node: CarvingNode) {
 }
 
 async function runPromptNode(context: RunContext, node: Extract<CarvingNode, { type: "prompt" }>) {
+  const { persistRemoteAsset } = await import("@/lib/storage/persist-remote");
+  const { completeJob } = await import("@/lib/db/repositories/jobs");
   const referenceImages = getIncomingImageUrlsForNode(context, node.id);
   const slug = pickImageSlug(node.data.model, referenceImages);
   const input = buildImageRequest({
@@ -518,6 +519,8 @@ async function runPromptNode(context: RunContext, node: Extract<CarvingNode, { t
   if (!asset) {
     throw new Error(`Failed to persist image output for node ${node.id}.`);
   }
+  // fal fetches reference inputs itself, so later nodes must get the fal URL, not a localhost asset URL it cannot reach.
+  context.providerUrlsByAssetId.set(asset.id, imageUrl);
   node.data.outputAssetIds = [...node.data.outputAssetIds, asset.id];
   node.data.activeAssetId = asset.id;
   node.data.activeJobId = null;
@@ -535,6 +538,8 @@ async function runPromptNode(context: RunContext, node: Extract<CarvingNode, { t
 }
 
 async function runVideoNode(context: RunContext, node: Extract<CarvingNode, { type: "video" }>) {
+  const { persistRemoteAsset } = await import("@/lib/storage/persist-remote");
+  const { completeJob } = await import("@/lib/db/repositories/jobs");
   const capabilityImageLimit = node.data.mode === "text" ? 0 : undefined;
   const imageUrls = getIncomingImageUrlsForNode(context, node.id);
   const input = buildVideoRequest({
@@ -578,6 +583,8 @@ async function runVideoNode(context: RunContext, node: Extract<CarvingNode, { ty
 }
 
 async function runMeshNode(context: RunContext, node: Extract<CarvingNode, { type: "mesh" }>) {
+  const { persistRemoteAsset } = await import("@/lib/storage/persist-remote");
+  const { completeJob } = await import("@/lib/db/repositories/jobs");
   const imageUrls = getIncomingImageUrlsForNode(context, node.id);
   const provider = node.data.provider ?? "meshy";
   const slug = pickMeshSlug(node.data.mode, provider, {
@@ -643,6 +650,7 @@ async function runMeshNode(context: RunContext, node: Extract<CarvingNode, { typ
 }
 
 async function runVisionNode(context: RunContext, node: Extract<CarvingNode, { type: "vision" }>) {
+  const { completeJob } = await import("@/lib/db/repositories/jobs");
   const imageUrls = getIncomingImageUrlsForNode(context, node.id);
   const slug = pickVisionSlug();
   const input = buildVisionRequest({
@@ -668,6 +676,7 @@ async function runVisionNode(context: RunContext, node: Extract<CarvingNode, { t
 }
 
 async function submitFalJob(context: RunContext, nodeId: string, slug: string, input: Record<string, unknown>) {
+  const { completeJob, createJob, markJobRunning } = await import("@/lib/db/repositories/jobs");
   fal.config({ credentials: getServerEnv().FAL_KEY });
   const submission = await fal.queue.submit(slug, { input });
   const job = await createJob({

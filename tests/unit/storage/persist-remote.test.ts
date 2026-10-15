@@ -18,6 +18,10 @@ import {
 import { writeFileIfMissing } from "@/lib/storage/files";
 
 describe("remote asset persistence boundary", () => {
+  it("accepts Hunyuan material and texture artifacts", () => {
+    expect(isAllowedPersistedKind("mtl")).toBe(true);
+    expect(isAllowedPersistedKind("texture")).toBe(true);
+  });
   beforeEach(() => {
     vi.mocked(createAssetRecord).mockClear();
     vi.mocked(getAssetBySha).mockClear();
@@ -46,6 +50,21 @@ describe("remote asset persistence boundary", () => {
     expect(asset?.jobId).toBe("job_123");
     expect(fetch).toHaveBeenCalledWith("https://v3.fal.media/files/carving-output.png");
     expect(writeFileIfMissing).toHaveBeenCalledOnce();
+  });
+
+  it("accepts the FBX content type fal reports for Meshy exports", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        headers: { "content-type": "application/vnd.autodesk.fbx", "content-length": "3" },
+      }),
+    );
+
+    const asset = await persistRemoteAsset({
+      sourceUrl: "https://v3.fal.media/files/model.fbx",
+      kind: "fbx",
+    });
+
+    expect(asset?.kind).toBe("fbx");
   });
 
   it("rejects local or private URLs before fetching", async () => {

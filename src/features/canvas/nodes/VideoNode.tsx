@@ -201,10 +201,8 @@ export function VideoNode({ id, data }: NodeProps<VideoGraphNode>) {
     : data.duration === "auto"
       ? 8
       : Number(data.duration);
-  const estimate =
-    data.model === "seedance-2.0"
-      ? estimateSeconds * VIDEO_TIER_OPTIONS[data.tier].pricePerSecond
-      : estimateSeconds * 0.4;
+  const pricePerSecond = data.model === "seedance-2.0" ? VIDEO_TIER_OPTIONS[data.tier].pricePerSecond : 0.4;
+  const estimate = pricePerSecond === null ? null : estimateSeconds * pricePerSecond;
   const changedDot = data.inputsChangedSinceLastRun && !runMutation.isPending;
 
   if (data.collapsed) {
@@ -380,7 +378,7 @@ export function VideoNode({ id, data }: NodeProps<VideoGraphNode>) {
           {runMutation.isPending ? "Running…" : activeAssetId ? "Re-run" : "Run"}
           {changedDot ? <span className="inline-block h-2 w-2 bg-[#d8421b]" aria-hidden /> : null}
         </span>
-        <span className="font-mono text-[11px] font-medium text-black/70">~${estimate.toFixed(2)}</span>
+        <span className="font-mono text-[11px] font-medium text-black/70">{estimate === null ? "" : `~$${estimate.toFixed(2)}`}</span>
       </button>
 
       {activeAssetId ? (

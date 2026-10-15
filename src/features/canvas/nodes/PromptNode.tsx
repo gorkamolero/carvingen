@@ -216,6 +216,8 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
             resolution: data.resolution,
             seed: data.seed ?? null,
             referenceAssetIds: referenceAssetIds.slice(0, capability.maxReferences),
+            // Runs only after a successful mutation, never during render.
+            // eslint-disable-next-line react-hooks/purity
             createdAt: Date.now(),
           },
         },

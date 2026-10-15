@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { validateProjectGraph } from "@/lib/graph/serialization";
-import { createPromptNodeData, createVisionNodeData } from "@/lib/graph/types";
+import { deserializeNode, serializeNode, validateProjectGraph } from "@/lib/graph/serialization";
+import { createMeshNodeData, createVideoNodeData, createPromptNodeData, createVisionNodeData } from "@/lib/graph/types";
 
 describe("validateProjectGraph", () => {
+  it("round-trips video settings and mesh provider options", () => {
+    for (const node of [
+      { id: "video", type: "video" as const, position: { x: 0, y: 0 }, data: { ...createVideoNodeData(), lastRunSeed: 42 } },
+      { id: "mesh", type: "mesh" as const, position: { x: 0, y: 0 }, data: { ...createMeshNodeData(), provider: "hunyuan" as const, hunyuanViewSlots: ["front", "right"] as ("front" | "right")[], meshyEnableAnimation: true } },
+    ]) {
+      expect(deserializeNode(serializeNode(node))).toEqual(node);
+    }
+  });
   it("accepts a valid prompt-only graph", () => {
     const graph = validateProjectGraph({
       id: "project-1",

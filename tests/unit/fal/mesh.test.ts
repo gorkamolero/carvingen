@@ -8,8 +8,22 @@ import {
 } from "@/lib/fal/mesh";
 
 describe("mesh adapter", () => {
+  it("supports legacy single-image callers", () => {
+    expect(buildMeshRequest({ mode: "preview", imageUrl: "https://example.com/a.png" })).toMatchObject({ image_url: "https://example.com/a.png" });
+  });
+  it("rejects missing images for both providers", () => {
+    for (const provider of ["meshy", "hunyuan"] as const) {
+      expect(() => buildMeshRequest({ mode: "preview", provider, imageUrls: [] })).toThrow(/Connect an image/);
+    }
+  });
+  it("keeps explicit low-poly overrides and false options", () => {
+    expect(buildMeshRequest({ mode: "refine", imageUrls: ["https://example.com/a.png"], meshyPolyMode: "low", meshyTargetPolycount: 5000, meshyShouldRemesh: false, meshyEnablePbr: true })).toMatchObject({ target_polycount: 5000, should_remesh: false, enable_pbr: true });
+  });
+  it("deduplicates Hunyuan slots and omits unfilled views", () => {
+    expect(buildMeshRequest({ mode: "preview", provider: "hunyuan", imageUrls: ["front", "right"], hunyuanViewSlots: ["right", "front", "right", "back"] })).toEqual({ input_image_url: "front", right_image_url: "right", generate_type: "Normal", enable_pbr: false, face_count: 500000 });
+  });
   it("keeps existing Meshy mode slugs", () => {
-    expect(pickMeshSlug("preview")).toBe("fal-ai/meshy/v6/image-to-3d");
+    expect(pickMeshSlug("preview")).toBe("fal-ai/meshy/v6-preview/image-to-3d");
     expect(pickMeshSlug("refine")).toBe("fal-ai/meshy/v6/image-to-3d");
   });
 

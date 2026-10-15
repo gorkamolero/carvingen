@@ -1,13 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   buildWorkflowGraph,
+  loadWorkflowDefinition,
   parseWorkflowDefinition,
   runWorkflow,
   type UploadedWorkflowAsset,
 } from "@/lib/workflow/runner";
 
+// Pure graph construction and dry runs must never initialize the live database.
+vi.mock("@/lib/db/client", () => { throw new Error("Dry run accessed the database"); });
+
 describe("workflow runner", () => {
+  it.each([
+    "image-prompt-mesh.json", "image-to-3d.hunyuan.json",
+    "image-to-video.seedance.json", "reference-to-video.veo.json",
+  ])("validates the documented %s graph without side effects", async (name) => {
+    const workflow = await loadWorkflowDefinition(`examples/workflows/${name}`);
+    const summary = await runWorkflow(workflow, { dryRun: true });
+    expect(summary.graph.nodes).toHaveLength(workflow.nodes.length);
+    expect(summary.nodesRun).toEqual([]);
+  });
   it("parses workflow defaults", () => {
     const workflow = parseWorkflowDefinition({
       project: { name: "Dry workflow" },

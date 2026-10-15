@@ -2,6 +2,7 @@ import type { Edge, Node, Viewport } from "@xyflow/react";
 import { z } from "zod";
 
 import {
+  VIDEO_ASPECT_RATIOS, VIDEO_RESOLUTIONS, VIDEO_DURATIONS,
   IMAGE_ASPECT_RATIOS,
   IMAGE_MODEL_BASES,
   IMAGE_RESOLUTIONS,
@@ -9,7 +10,7 @@ import {
   VISION_MODEL_VALUES,
 } from "@/lib/fal/models";
 
-export const nodeTypeSchema = z.enum(["prompt", "image", "mesh", "viewer", "vision"]);
+export const nodeTypeSchema = z.enum(["prompt", "image", "mesh", "viewer", "vision", "video"]);
 export const handleIdSchema = z.enum(["image-in", "image-out", "glb-in", "glb-out"]);
 
 const promptVersionSnapshotSchema = z.object({
@@ -64,6 +65,25 @@ export const imageNodeDataSchema = z.object({
 });
 
 export const meshNodeDataSchema = z.object({
+  provider: z.enum(["meshy", "hunyuan"]).default("meshy"),
+  meshyUseMultiview: z.boolean().default(false),
+  meshyPolyMode: z.enum(["standard", "low"]).default("standard"),
+  meshyTopology: z.enum(["triangle", "quad"]).default("triangle"),
+  meshyTargetPolycount: z.number().int().min(100).max(300000).optional(),
+  meshySymmetryMode: z.enum(["auto", "on", "off"]).default("auto"),
+  meshyShouldRemesh: z.boolean().default(true),
+  meshyShouldTexture: z.boolean().default(true),
+  meshyEnablePbr: z.boolean().default(false),
+  meshyPoseMode: z.enum(["", "a-pose", "t-pose"]).default(""),
+  meshyEnableRigging: z.boolean().default(false),
+  meshyRiggingHeightMeters: z.number().positive().default(1.7),
+  meshyEnableAnimation: z.boolean().default(false),
+  meshyAnimationActionId: z.number().int().default(1001),
+  hunyuanViewSlots: z.array(z.enum(["front", "left", "back", "right"])).default(["front"]),
+  hunyuanGenerateType: z.enum(["Normal", "LowPoly", "Geometry"]).default("Normal"),
+  hunyuanEnablePbr: z.boolean().default(false),
+  hunyuanFaceCount: z.number().int().min(40000).max(1500000).default(500000),
+
   mode: z.enum(["preview", "refine"] satisfies [MeshMode, MeshMode]),
   activeJobId: z.string().nullable(),
   outputAssetId: z.string().nullable(),
@@ -96,6 +116,25 @@ export const visionNodeDataSchema = z.object({
   collapsed: z.boolean().optional().default(false),
 });
 
+export const videoNodeDataSchema = promptNodeDataSchema.omit({
+  model: true, aspectRatio: true, resolution: true, versionMetadata: true, chainSources: true,
+}).extend({
+  model: z.enum(["seedance-2.0", "veo3.1-fast-reference"]),
+  mode: z.enum(["text", "image", "reference"]),
+  tier: z.enum(["fast", "standard"]),
+  aspectRatio: z.enum(VIDEO_ASPECT_RATIOS),
+  resolution: z.enum(VIDEO_RESOLUTIONS),
+  duration: z.enum(VIDEO_DURATIONS),
+  generateAudio: z.boolean(),
+  lastRunSeed: z.number().nullable().optional(),
+});
+export type VideoNodeData = z.infer<typeof videoNodeDataSchema>;
+export type VideoNode = Node<VideoNodeData, "video">;
+export function createVideoNodeData(): VideoNodeData {
+  return videoNodeDataSchema.parse({ ...createPromptNodeData(), model: "seedance-2.0",
+    mode: "text", tier: "fast", aspectRatio: "16:9", resolution: "720p", duration: "8", generateAudio: true });
+}
+
 export type PromptNodeData = z.infer<typeof promptNodeDataSchema>;
 export type ImageNodeData = z.infer<typeof imageNodeDataSchema>;
 export type MeshNodeData = z.infer<typeof meshNodeDataSchema>;
@@ -108,7 +147,7 @@ export type MeshNode = Node<MeshNodeData, "mesh">;
 export type ViewerNode = Node<ViewerNodeData, "viewer">;
 export type VisionNode = Node<VisionNodeData, "vision">;
 
-export type CarvingNode = PromptNode | ImageNode | MeshNode | ViewerNode | VisionNode;
+export type CarvingNode = PromptNode | ImageNode | MeshNode | ViewerNode | VisionNode | VideoNode;
 export type EdgeKind = "image" | "glb";
 export type CarvingEdge = Edge<{ kind: EdgeKind }>;
 
@@ -154,7 +193,7 @@ export function createImageNodeData(): ImageNodeData {
 }
 
 export function createMeshNodeData(): MeshNodeData {
-  return {
+  return meshNodeDataSchema.parse({
     mode: "preview",
     activeJobId: null,
     outputAssetId: null,
@@ -166,7 +205,7 @@ export function createMeshNodeData(): MeshNodeData {
     collapsed: false,
     autoRotate: true,
     exposure: 1,
-  };
+  });
 }
 
 export function createViewerNodeData(): ViewerNodeData {

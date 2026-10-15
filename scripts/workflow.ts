@@ -1,6 +1,6 @@
 import { loadLocalEnvFile } from "@/lib/load-local-env";
 
-loadLocalEnvFile(process.cwd());
+
 
 type CliOptions = {
   workflowPath: string;
@@ -12,6 +12,7 @@ type CliOptions = {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  if (!options.dryRun) loadLocalEnvFile(process.cwd());
   const { loadWorkflowDefinition, runWorkflow } = await import("@/lib/workflow/runner");
   const workflow = await loadWorkflowDefinition(options.workflowPath);
   const summary = await runWorkflow(workflow, {

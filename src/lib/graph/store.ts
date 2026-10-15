@@ -7,6 +7,8 @@ import { proxyWithHistory } from "valtio-history";
 import { canConnect, getHandleKind } from "@/lib/graph/connections";
 import { markDownstreamInputsChanged } from "@/lib/graph/inputs-changed";
 import {
+  createVideoNodeData,
+  type VideoNodeData,
   createImageNodeData,
   createMeshNodeData,
   createPromptNodeData,
@@ -82,6 +84,10 @@ export function markSaved() {
 }
 
 function createNode(nodeType: CarvingNode["type"], position: { x: number; y: number }) {
+  if (nodeType === "video") {
+    return { id: nanoid(), type: "video", position, data: createVideoNodeData() } as CarvingNode;
+  }
+
   if (nodeType === "prompt") {
     return { id: nanoid(), type: "prompt", position, data: createPromptNodeData() } as CarvingNode;
   }
@@ -239,4 +245,13 @@ export function redo() {
   if (graphHistory.canRedo()) {
     graphHistory.redo();
   }
+}
+
+export function updateVideoNode(nodeId: string, patch: Partial<VideoNodeData>) {
+  graphHistory.value.nodes = graphHistory.value.nodes.map((node) =>
+    node.id === nodeId && node.type === "video"
+      ? { ...node, data: { ...node.data, ...patch } }
+      : node,
+  ) as CarvingNode[];
+  bumpRevision();
 }

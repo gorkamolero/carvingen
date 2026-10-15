@@ -1,0 +1,28 @@
+{
+  "project": { "name": "Owl landing", "mode": "create" },
+  "assets": [],
+  "nodes": [
+    { "id": "p1", "type": "prompt", "position": { "x": 100, "y": 120 }, "run": true,
+      "data": { "text": "A great horned owl landing on a log, wings wide open, a concept for a large wood carving, plain neutral background", "model": "fal-ai/nano-banana-2", "aspectRatio": "1:1", "resolution": "1K", "seed": null } },
+    { "id": "p2", "type": "prompt", "position": { "x": 520, "y": 120 }, "run": true,
+      "data": { "text": "Same owl, rendered as a single sculpture carved from one block of pale wood: matte surface, visible gouge marks, no painted colour", "model": "fal-ai/nano-banana-2", "aspectRatio": "1:1", "resolution": "1K", "seed": null } },
+    { "id": "p3a", "type": "prompt", "position": { "x": 940, "y": -120 }, "run": true,
+      "data": { "text": "Same sculpture with the wings raised high above the back, head level, talons forward", "model": "fal-ai/nano-banana-2", "aspectRatio": "1:1", "resolution": "1K", "seed": null } },
+    { "id": "p3b", "type": "prompt", "position": { "x": 940, "y": 360 }, "run": true,
+      "data": { "text": "Same sculpture with the wings swept back and down, body low, talons reaching for the log", "model": "fal-ai/nano-banana-2", "aspectRatio": "1:1", "resolution": "1K", "seed": null } },
+    { "id": "p4", "type": "prompt", "position": { "x": 1360, "y": -120 }, "run": true,
+      "data": { "text": "Simplify the feathers into bold planes a chainsaw and gouge can cut, keep the pose, add a thick log base so it stands on its own, plain grey background", "model": "fal-ai/nano-banana-2", "aspectRatio": "1:1", "resolution": "1K", "seed": null } },
+    { "id": "mesh1", "type": "mesh", "position": { "x": 1780, "y": -120 }, "run": true,
+      "data": { "provider": "meshy", "mode": "preview", "meshyUseMultiview": false, "meshyPolyMode": "standard", "meshyTargetPolycount": 100000, "meshyTopology": "triangle", "meshySymmetryMode": "auto", "meshyPoseMode": "", "meshyEnableRigging": false, "meshyRiggingHeightMeters": 1.7, "meshyEnableAnimation": false, "meshyAnimationActionId": 1001 } },
+    { "id": "view1", "type": "viewer", "position": { "x": 2200, "y": -120 } }
+  ],
+  "edges": [
+    { "source": "p1", "sourceHandle": "image-out", "target": "p2", "targetHandle": "image-in" },
+    { "source": "p2", "sourceHandle": "image-out", "target": "p3a", "targetHandle": "image-in" },
+    { "source": "p2", "sourceHandle": "image-out", "target": "p3b", "targetHandle": "image-in" },
+    { "source": "p3a", "sourceHandle": "image-out", "target": "p4", "targetHandle": "image-in" },
+    { "source": "p4", "sourceHandle": "image-out", "target": "mesh1", "targetHandle": "image-in" },
+    { "source": "mesh1", "sourceHandle": "glb-out", "target": "view1", "targetHandle": "glb-in" }
+  ],
+  "viewport": { "x": 0, "y": 0, "zoom": 0.5 }
+}

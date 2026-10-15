@@ -38,8 +38,8 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
         throw new Error("Connect an image before running Mesh.");
       }
 
-      const slug = pickMeshSlug(data.mode);
-      const input = buildMeshRequest({ imageUrl, mode: data.mode });
+      const slug = pickMeshSlug(data.mode, data.provider, data);
+      const input = buildMeshRequest({ ...data, imageUrls: sourceImages });
       const submission = await fal.queue.submit(slug, { input });
       const job = await fetchJson<{ jobId: string }>("/api/jobs", {
         method: "POST",

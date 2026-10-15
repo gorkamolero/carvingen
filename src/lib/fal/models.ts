@@ -98,3 +98,50 @@ export const VISION_MODEL_VALUES = [
   "openai/gpt-4.1-mini",
 ] as const satisfies ReadonlyArray<VisionModel>;
 export const VISION_SLUG = "openrouter/router/vision";
+
+export const MESHY_MULTI_IMAGE_SLUG = "fal-ai/meshy/v6/multi-image-to-3d";
+export const HUNYUAN_MESH_SLUG = "fal-ai/hunyuan-3d/v3.1/pro/image-to-3d";
+export const VIDEO_MODEL_OPTIONS = [
+  { value: "seedance-2.0", label: "Seedance 2.0", tagline: "Text, frames and references" },
+  { value: "veo3.1-fast-reference", label: "Veo 3.1 Fast Reference", tagline: "Animate image references" },
+] as const;
+export const VIDEO_MODE_OPTIONS = [
+  { value: "text", label: "Text" },
+  { value: "image", label: "Image" },
+  { value: "reference", label: "Reference" },
+] as const;
+// No Seedance price is documented in this repository. Do not invent an estimate.
+export const VIDEO_TIER_OPTIONS: Record<"fast" | "standard", { label: string; pricePerSecond: number | null }> = {
+  fast: { label: "Fast", pricePerSecond: null },
+  standard: { label: "Standard", pricePerSecond: null },
+} as const;
+export type VideoModel = (typeof VIDEO_MODEL_OPTIONS)[number]["value"];
+export type VideoMode = (typeof VIDEO_MODE_OPTIONS)[number]["value"];
+export type VideoTier = keyof typeof VIDEO_TIER_OPTIONS;
+export const VIDEO_ASPECT_RATIOS = ["auto", "16:9", "9:16", "1:1", "4:3", "3:4", "21:9"] as const;
+export const VIDEO_RESOLUTIONS = ["480p", "720p", "1080p"] as const;
+export const VIDEO_DURATIONS = ["auto", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "8s"] as const;
+export type AnyVideoAspectRatio = (typeof VIDEO_ASPECT_RATIOS)[number];
+export type AnyVideoResolution = (typeof VIDEO_RESOLUTIONS)[number];
+export type AnyVideoDuration = (typeof VIDEO_DURATIONS)[number];
+type VideoCapability = {
+  supportedModes: VideoMode[];
+  tiers: VideoTier[];
+  aspectRatios: AnyVideoAspectRatio[];
+  resolutions: AnyVideoResolution[];
+  durations: AnyVideoDuration[];
+  maxImagesByMode: Record<VideoMode, number>;
+};
+export const VIDEO_MODEL_CAPABILITIES: Record<VideoModel, VideoCapability> = {
+  "seedance-2.0": {
+    supportedModes: ["text", "image", "reference"], tiers: ["fast", "standard"],
+    aspectRatios: [...VIDEO_ASPECT_RATIOS], resolutions: [...VIDEO_RESOLUTIONS],
+    durations: VIDEO_DURATIONS.filter((duration) => duration !== "8s"),
+    maxImagesByMode: { text: 0, image: 2, reference: 9 },
+  },
+  "veo3.1-fast-reference": {
+    supportedModes: ["reference"], tiers: ["fast"],
+    aspectRatios: ["16:9", "9:16"], resolutions: ["720p", "1080p"], durations: ["8s"],
+    maxImagesByMode: { text: 0, image: 0, reference: 3 },
+  },
+};

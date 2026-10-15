@@ -23,7 +23,7 @@ export function markDownstreamInputsChanged(
       return node;
     }
 
-    if (node.type === "prompt" || node.type === "mesh" || node.type === "vision") {
+    if (node.type === "prompt" || node.type === "mesh" || node.type === "vision" || node.type === "video") {
       return {
         ...node,
         data: {

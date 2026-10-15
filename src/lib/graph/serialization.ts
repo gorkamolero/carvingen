@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  videoNodeDataSchema,
   handleIdSchema,
   imageNodeDataSchema,
   meshNodeDataSchema,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/graph/types";
 
 const nodeSchema = z.discriminatedUnion("type", [
+  z.object({ id: z.string(), type: z.literal("video"), position: z.object({ x: z.number(), y: z.number() }), data: videoNodeDataSchema }),
   z.object({
     id: z.string(),
     type: z.literal("prompt"),
@@ -71,6 +73,8 @@ export function parseNodeData(type: z.infer<typeof nodeTypeSchema>, dataJson: st
   const data = JSON.parse(dataJson);
 
   switch (type) {
+    case "video":
+      return videoNodeDataSchema.parse(data);
     case "prompt":
       return promptNodeDataSchema.parse(data);
     case "image":
