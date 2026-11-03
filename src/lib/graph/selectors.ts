@@ -24,6 +24,7 @@ export function getActivePromptAssetId(node: CarvingNode) {
 }
 
 export function getNodeImageAssetId(node: CarvingNode) {
+  if (node.type === "multiview") return node.data.activeAssetId ?? node.data.artifactAssetIds.front ?? null;
   if (node.type === "image") {
     return node.data.assetId;
   }
@@ -167,5 +168,5 @@ export function getIncomingGlbAssetId(
   }
 
   const sourceNode = getNodeById(nodes, edge.source);
-  return sourceNode?.type === "mesh" ? sourceNode.data.outputAssetId : null;
+  return sourceNode && "outputAssetId" in sourceNode.data ? sourceNode.data.outputAssetId : null;
 }

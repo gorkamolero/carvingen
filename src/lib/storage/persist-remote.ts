@@ -51,7 +51,7 @@ export async function persistRemoteAsset(input: {
   validateContentType(input.kind, mimeType);
 
   const hash = sha256(buffer);
-  const ext = extension(mimeType) || input.kind;
+  const ext = ["glb", "fbx", "obj", "stl", "usdz", "mtl"].includes(input.kind) ? input.kind : extension(mimeType) || input.kind;
   const existing = await getAssetBySha(hash, buffer.byteLength);
 
   if (existing) {

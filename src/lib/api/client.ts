@@ -2,7 +2,7 @@ export async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit)
   const response = await fetch(input, {
     ...init,
     headers: {
-      "content-type": "application/json",
+      ...(init?.body instanceof FormData ? {} : { "content-type": "application/json" }),
       ...(init?.headers ?? {}),
     },
   });

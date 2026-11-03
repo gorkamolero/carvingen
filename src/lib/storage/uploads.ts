@@ -18,6 +18,17 @@ export async function normalizeUpload(file: File): Promise<NormalizedUpload> {
     throw new ApiError(413, "Upload exceeds the 25 MB limit.");
   }
 
+  const animationExt = extname(file.name).toLowerCase();
+  if ([".fbx", ".bvh", ".glb"].includes(animationExt)) {
+    if (!["", "application/octet-stream", "application/vnd.autodesk.fbx", "model/gltf-binary", "text/plain"].includes(file.type)) throw new ApiError(415, "Invalid animation MIME type.");
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const header = buffer.subarray(0, 256).toString("utf8");
+    const valid = animationExt === ".glb" ? buffer.length >= 20 && buffer.toString("ascii", 0, 4) === "glTF" && buffer.readUInt32LE(4) === 2 && buffer.readUInt32LE(8) === buffer.length
+      : animationExt === ".bvh" ? /^\s*HIERARCHY\s+ROOT\s/.test(header)
+      : header.startsWith("Kaydara FBX Binary") || /^;.*FBX/.test(header);
+    if (!valid) throw new ApiError(415, "File contents do not match the animation extension.");
+    return { buffer, mimeType: animationExt === ".glb" ? "model/gltf-binary" : "application/octet-stream", extension: animationExt };
+  }
   if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.type as AllowedUploadMimeType)) {
     throw new ApiError(415, "Unsupported image type.");
   }

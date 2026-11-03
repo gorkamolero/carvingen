@@ -1,0 +1,12 @@
+{
+  "prices": [
+    {
+      "endpoint_id": "fal-ai/meshy/rigging",
+      "unit_price": 0.8,
+      "unit": "generations",
+      "currency": "USD"
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

@@ -1,0 +1,212 @@
+{
+  "project": {
+    "name": "Character Atlas"
+  },
+  "nodes": [
+    {
+      "id": "reference",
+      "type": "prompt",
+      "data": {
+        "text": "Stylized adventurous game character, full body, simple fitted tunic, boots, leather belt, expressive face, plain white background, neutral standing pose, no weapons in hands",
+        "model": "fal-ai/nano-banana-2",
+        "aspectRatio": "3:4"
+      },
+      "run": true,
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "views",
+      "type": "multiview",
+      "data": {
+        "includeBack": true,
+        "equipment": "sword, shield"
+      },
+      "run": true,
+      "position": {
+        "x": 400,
+        "y": 0
+      }
+    },
+    {
+      "id": "mesh",
+      "type": "mesh",
+      "data": {
+        "provider": "tripo-p2",
+        "tripoFaceLimit": 30000,
+        "tripoTexture": true,
+        "tripoPbr": true
+      },
+      "run": true,
+      "position": {
+        "x": 800,
+        "y": 0
+      }
+    },
+    {
+      "id": "bake",
+      "type": "bake",
+      "data": {
+        "targetTriangles": 12000,
+        "textureSize": 2048
+      },
+      "run": true,
+      "position": {
+        "x": 1200,
+        "y": 0
+      }
+    },
+    {
+      "id": "rig",
+      "type": "rig",
+      "data": {
+        "heightMeters": 1.8
+      },
+      "run": true,
+      "position": {
+        "x": 1600,
+        "y": 0
+      }
+    },
+    {
+      "id": "animate",
+      "type": "animate",
+      "data": {
+        "presetIds": [
+          0,
+          30
+        ],
+        "heightMeters": 1.8
+      },
+      "run": true,
+      "position": {
+        "x": 2000,
+        "y": 0
+      }
+    },
+    {
+      "id": "export",
+      "type": "export",
+      "data": {
+        "target": "unity",
+        "triangleBudget": 15000,
+        "characterName": "Adventurer"
+      },
+      "run": true,
+      "position": {
+        "x": 2400,
+        "y": 0
+      }
+    },
+    {
+      "id": "mesh-viewer",
+      "type": "viewer",
+      "position": {
+        "x": 800,
+        "y": 1100
+      }
+    },
+    {
+      "id": "bake-viewer",
+      "type": "viewer",
+      "position": {
+        "x": 1200,
+        "y": 1100
+      }
+    },
+    {
+      "id": "animate-viewer",
+      "type": "viewer",
+      "position": {
+        "x": 2000,
+        "y": 1100
+      }
+    },
+    {
+      "id": "rig-viewer",
+      "type": "viewer",
+      "position": {
+        "x": 1600,
+        "y": 1100
+      }
+    },
+    {
+      "id": "export-viewer",
+      "type": "viewer",
+      "position": {
+        "x": 2400,
+        "y": 1100
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "reference",
+      "sourceHandle": "image-out",
+      "target": "views",
+      "targetHandle": "image-in"
+    },
+    {
+      "source": "views",
+      "sourceHandle": "image-out",
+      "target": "mesh",
+      "targetHandle": "image-in"
+    },
+    {
+      "source": "mesh",
+      "sourceHandle": "glb-out",
+      "target": "bake",
+      "targetHandle": "glb-in"
+    },
+    {
+      "source": "bake",
+      "sourceHandle": "glb-out",
+      "target": "rig",
+      "targetHandle": "glb-in"
+    },
+    {
+      "source": "rig",
+      "sourceHandle": "glb-out",
+      "target": "animate",
+      "targetHandle": "glb-in"
+    },
+    {
+      "source": "animate",
+      "sourceHandle": "glb-out",
+      "target": "export",
+      "targetHandle": "glb-in"
+    },
+    {
+      "source": "mesh",
+      "sourceHandle": "glb-out",
+      "target": "mesh-viewer",
+      "targetHandle": "glb-in"
+    },
+    {
+      "source": "bake",
+      "sourceHandle": "glb-out",
+      "target": "bake-viewer",
+      "targetHandle": "glb-in"
+    },
+    {
+      "source": "animate",
+      "sourceHandle": "glb-out",
+      "target": "animate-viewer",
+      "targetHandle": "glb-in"
+    },
+    {
+      "source": "rig",
+      "sourceHandle": "glb-out",
+      "target": "rig-viewer",
+      "targetHandle": "glb-in"
+    },
+    {
+      "source": "export",
+      "sourceHandle": "glb-out",
+      "target": "export-viewer",
+      "targetHandle": "glb-in"
+    }
+  ]
+}

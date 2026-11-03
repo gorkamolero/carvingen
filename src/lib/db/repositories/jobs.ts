@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/http/errors";
 export type CreateJobInput = {
   projectId: string;
   nodeId: string;
-  provider: "fal";
+  provider: "fal" | "local";
   providerJobId: string;
   providerSlug: string;
   requestInput: object;
@@ -95,4 +95,9 @@ export async function completeJob(input: {
     .where(eq(jobs.id, input.id));
 
   return getJobById(input.id);
+}
+
+export async function updateJobProgress(id: string, progress: number, status: string) {
+  ensureDatabase();
+  await db.update(jobs).set({ state: "running", responseSummaryJson: JSON.stringify({ progress, status }) }).where(and(eq(jobs.id, id), inArray(jobs.state, ["queued", "running"])));
 }

@@ -1,0 +1,34 @@
+{
+  "models": [
+    {
+      "endpoint_id": "tripo3d/h3.1/image-to-3d",
+      "metadata": {
+        "display_name": "Tripo H3.1 Image to 3D",
+        "category": "image-to-3d",
+        "description": "Generate high-quality 3D models from a single image using Tripo H3.1.",
+        "status": "active",
+        "tags": [
+          "3d",
+          "image-to-3d",
+          "3d-generation",
+          "tripo"
+        ],
+        "updated_at": "2026-10-20T22:17:05.091Z",
+        "is_favorited": false,
+        "thumbnail_url": "https://v3b.fal.media/files/b/0a95559a/DXp1uAfHvZsXt-GJ9-Bp-_47060336be0749d5bd751ca6359cd2f9.jpg",
+        "model_url": "https://fal.run/tripo3d/h3.1/image-to-3d",
+        "license_type": "commercial",
+        "date": "2026-04-07T19:19:14.338Z",
+        "group": {
+          "key": "tripo-h3.1",
+          "label": "Image to 3D"
+        },
+        "highlighted": false,
+        "kind": "inference",
+        "pinned": false
+      }
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

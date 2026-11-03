@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     const asset = await createAssetRecord({
       id: nanoid(),
-      kind: "image",
+      kind: normalized.mimeType.startsWith("image/") ? "image" : normalized.extension.slice(1),
       mimeType: normalized.mimeType,
       localPath,
       sourceUrl: null,

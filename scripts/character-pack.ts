@@ -1,7 +1,8 @@
+import { copyAnimationClips } from "@/lib/character/pack";
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-import { Accessor, NodeIO, type Document, type Node as GltfNode } from "@gltf-transform/core";
+import { NodeIO, type Document } from "@gltf-transform/core";
 import { dedup, prune, quantize, resample, textureCompress, weld } from "@gltf-transform/functions";
 import sharp from "sharp";
 
@@ -128,90 +129,7 @@ function renameDocumentAnimations(doc: Document, clip: ClipInput) {
 }
 
 function copyAnimations(baseDoc: Document, sourceDoc: Document, clip: ClipInput) {
-  const baseRoot = baseDoc.getRoot();
-  const sourceRoot = sourceDoc.getRoot();
-  const baseNodes = baseRoot.listNodes();
-  const sourceNodes = sourceRoot.listNodes();
-  const baseNodeByName = new Map<string, GltfNode>();
-  for (const node of baseNodes) {
-    const name = node.getName();
-    if (name) {
-      baseNodeByName.set(name, node);
-    }
-  }
-  const buffer = baseRoot.listBuffers()[0] ?? baseDoc.createBuffer();
-
-  for (const sourceAnimation of sourceRoot.listAnimations()) {
-    const targetAnimation = baseDoc.createAnimation(getClipName(clip, sourceAnimation.getName()));
-
-    for (const sourceSampler of sourceAnimation.listSamplers()) {
-      const input = sourceSampler.getInput();
-      const output = sourceSampler.getOutput();
-      if (!input || !output) {
-        continue;
-      }
-      targetAnimation.addSampler(
-        baseDoc
-          .createAnimationSampler()
-          .setInput(copyAccessor(baseDoc, input, buffer))
-          .setOutput(copyAccessor(baseDoc, output, buffer))
-          .setInterpolation(sourceSampler.getInterpolation()),
-      );
-    }
-
-    const sourceSamplers = sourceAnimation.listSamplers();
-    const targetSamplers = targetAnimation.listSamplers();
-    for (const sourceChannel of sourceAnimation.listChannels()) {
-      const sourceTargetNode = sourceChannel.getTargetNode();
-      const sourceTargetPath = sourceChannel.getTargetPath();
-      const sourceSampler = sourceChannel.getSampler();
-      if (!sourceTargetNode || !sourceTargetPath || !sourceSampler) {
-        continue;
-      }
-
-      const targetNode = findTargetNode(sourceTargetNode, sourceNodes, baseNodes, baseNodeByName);
-      const targetSampler = targetSamplers[sourceSamplers.indexOf(sourceSampler)];
-      if (!targetNode || !targetSampler) {
-        continue;
-      }
-
-      targetAnimation.addChannel(
-        baseDoc
-          .createAnimationChannel()
-          .setTargetNode(targetNode)
-          .setTargetPath(sourceTargetPath)
-          .setSampler(targetSampler),
-      );
-    }
-  }
-}
-
-function copyAccessor(baseDoc: Document, source: Accessor, buffer: ReturnType<Document["createBuffer"]>) {
-  const sourceArray = source.getArray();
-  if (!sourceArray) {
-    throw new Error(`Animation accessor ${source.getName()} has no array.`);
-  }
-
-  return baseDoc
-    .createAccessor(source.getName())
-    .setArray(sourceArray.slice() as NonNullable<ReturnType<Accessor["getArray"]>>)
-    .setType(source.getType())
-    .setBuffer(buffer)
-    .setNormalized(source.getNormalized())
-    .setSparse(source.getSparse());
-}
-
-function findTargetNode(
-  sourceNode: GltfNode,
-  sourceNodes: GltfNode[],
-  baseNodes: GltfNode[],
-  baseNodeByName: Map<string, GltfNode>,
-) {
-  const byName = baseNodeByName.get(sourceNode.getName());
-  if (byName) {
-    return byName;
-  }
-  return baseNodes[sourceNodes.indexOf(sourceNode)] ?? null;
+  copyAnimationClips(baseDoc, sourceDoc, getClipName(clip, "clip"));
 }
 
 function getClipName(clip: ClipInput, fallback: string) {

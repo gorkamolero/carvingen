@@ -193,3 +193,37 @@ A typical flow on the canvas:
 ```
 
 Every arrow is `image-out → image-in` except the last two (`image-out → image-in` of Mesh, then `glb-out → glb-in` of Viewer).
+
+## Character pipeline nodes
+
+These nodes have separate palette tiles. All runnable character nodes and Mesh use POST `/api/jobs/<kind>` plus GET `/api/jobs/:id`; history is append-only. See [schema facts, prices and limitations](CHARACTER_PIPELINE.md).
+
+### Multi-view (`multiview`)
+
+One `image-in`; one selectable `image-out` (front by default). Nano Banana 2 edit produces T-pose front and left, optional back, and separate equipment cutouts on white. Equipment names are comma-separated. H3.1 multi-view consumes front/left/back automatically when enabled, excluding equipment.
+
+### Bake (`bake`)
+
+`glb-in` → `glb-out`. Default local Blender: target 12000 triangles, keep-UV option, 1024/2048/4096 texture (default 2048), base-color bake and GLB/FBX/PNG downloads. Displays actual triangles and progress. Tripo remesh is an alternative engine with face limit and quad controls; remote outputs vary by provider.
+
+### Rig (`rig`)
+
+`glb-in` → `glb-out`. Humanoid T-pose GLB, character height in metres (default 1.8). Meshy returns rigged GLB/FBX and basic animation files; the node reports actual joint count and names.
+
+### Animate (`animate`)
+
+`glb-in` plus optional `animation-in` → `glb-out`. Select up to ten library preset slots, or remove presets for local-only custom clips. fal multi-animation rerigs its input and cannot reuse a rig task ID. Download individual clips, a combined GLB and ZIP. Viewer plays the combined clips.
+
+### Animation (`animation`)
+
+Upload FBX/BVH/GLB through the asset uploader; `animation-out` connects to Animate. No provider cost. MIME, extension, signature and size are validated.
+
+### Engine export (`export`)
+
+One or more `glb-in` inputs → `glb-out`. Unity Humanoid or Unreal naming, character name and triangle budget (default 15000). Produces GLB/FBX files, manifest and ZIP. Budget pass/fail is visible; engine rig setup remains necessary.
+
+### Mesh Tripo engines and Viewer animations
+
+Mesh adds P2 and H3.1 alongside existing Meshy/Hunyuan. Controls follow their schemas, including face count, quad, PBR, textures and quality. Quad FBX-only results are converted locally to GLB. Every returned variant is retained. Viewer accepts Mesh/Bake/Rig/Animate/Export outputs and offers clip selection and play/pause.
+
+The palette scrolls vertically so all tiles remain accessible on smaller windows.

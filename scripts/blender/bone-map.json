@@ -1,0 +1,210 @@
+{
+  "Hips": {
+    "unity": "Hips",
+    "unreal": "pelvis"
+  },
+  "Spine": {
+    "unity": "Spine",
+    "unreal": "spine_01"
+  },
+  "Spine1": {
+    "unity": "Chest",
+    "unreal": "spine_02"
+  },
+  "Spine2": {
+    "unity": "UpperChest",
+    "unreal": "spine_03"
+  },
+  "Neck": {
+    "unity": "Neck",
+    "unreal": "neck_01"
+  },
+  "Head": {
+    "unity": "Head",
+    "unreal": "head"
+  },
+  "LeftShoulder": {
+    "unity": "LeftShoulder",
+    "unreal": "clavicle_l"
+  },
+  "LeftArm": {
+    "unity": "LeftUpperArm",
+    "unreal": "upperarm_l"
+  },
+  "LeftForeArm": {
+    "unity": "LeftLowerArm",
+    "unreal": "lowerarm_l"
+  },
+  "LeftHand": {
+    "unity": "LeftHand",
+    "unreal": "hand_l"
+  },
+  "LeftUpLeg": {
+    "unity": "LeftUpperLeg",
+    "unreal": "thigh_l"
+  },
+  "LeftLeg": {
+    "unity": "LeftLowerLeg",
+    "unreal": "calf_l"
+  },
+  "LeftFoot": {
+    "unity": "LeftFoot",
+    "unreal": "foot_l"
+  },
+  "LeftToeBase": {
+    "unity": "LeftToes",
+    "unreal": "ball_l"
+  },
+  "LeftHandThumb1": {
+    "unity": "LeftThumbProximal",
+    "unreal": "thumb_01_l"
+  },
+  "LeftHandThumb2": {
+    "unity": "LeftThumbIntermediate",
+    "unreal": "thumb_02_l"
+  },
+  "LeftHandThumb3": {
+    "unity": "LeftThumbDistal",
+    "unreal": "thumb_03_l"
+  },
+  "LeftHandIndex1": {
+    "unity": "LeftIndexProximal",
+    "unreal": "index_01_l"
+  },
+  "LeftHandIndex2": {
+    "unity": "LeftIndexIntermediate",
+    "unreal": "index_02_l"
+  },
+  "LeftHandIndex3": {
+    "unity": "LeftIndexDistal",
+    "unreal": "index_03_l"
+  },
+  "LeftHandMiddle1": {
+    "unity": "LeftMiddleProximal",
+    "unreal": "middle_01_l"
+  },
+  "LeftHandMiddle2": {
+    "unity": "LeftMiddleIntermediate",
+    "unreal": "middle_02_l"
+  },
+  "LeftHandMiddle3": {
+    "unity": "LeftMiddleDistal",
+    "unreal": "middle_03_l"
+  },
+  "LeftHandRing1": {
+    "unity": "LeftRingProximal",
+    "unreal": "ring_01_l"
+  },
+  "LeftHandRing2": {
+    "unity": "LeftRingIntermediate",
+    "unreal": "ring_02_l"
+  },
+  "LeftHandRing3": {
+    "unity": "LeftRingDistal",
+    "unreal": "ring_03_l"
+  },
+  "LeftHandPinky1": {
+    "unity": "LeftLittleProximal",
+    "unreal": "pinky_01_l"
+  },
+  "LeftHandPinky2": {
+    "unity": "LeftLittleIntermediate",
+    "unreal": "pinky_02_l"
+  },
+  "LeftHandPinky3": {
+    "unity": "LeftLittleDistal",
+    "unreal": "pinky_03_l"
+  },
+  "RightShoulder": {
+    "unity": "RightShoulder",
+    "unreal": "clavicle_r"
+  },
+  "RightArm": {
+    "unity": "RightUpperArm",
+    "unreal": "upperarm_r"
+  },
+  "RightForeArm": {
+    "unity": "RightLowerArm",
+    "unreal": "lowerarm_r"
+  },
+  "RightHand": {
+    "unity": "RightHand",
+    "unreal": "hand_r"
+  },
+  "RightUpLeg": {
+    "unity": "RightUpperLeg",
+    "unreal": "thigh_r"
+  },
+  "RightLeg": {
+    "unity": "RightLowerLeg",
+    "unreal": "calf_r"
+  },
+  "RightFoot": {
+    "unity": "RightFoot",
+    "unreal": "foot_r"
+  },
+  "RightToeBase": {
+    "unity": "RightToes",
+    "unreal": "ball_r"
+  },
+  "RightHandThumb1": {
+    "unity": "RightThumbProximal",
+    "unreal": "thumb_01_r"
+  },
+  "RightHandThumb2": {
+    "unity": "RightThumbIntermediate",
+    "unreal": "thumb_02_r"
+  },
+  "RightHandThumb3": {
+    "unity": "RightThumbDistal",
+    "unreal": "thumb_03_r"
+  },
+  "RightHandIndex1": {
+    "unity": "RightIndexProximal",
+    "unreal": "index_01_r"
+  },
+  "RightHandIndex2": {
+    "unity": "RightIndexIntermediate",
+    "unreal": "index_02_r"
+  },
+  "RightHandIndex3": {
+    "unity": "RightIndexDistal",
+    "unreal": "index_03_r"
+  },
+  "RightHandMiddle1": {
+    "unity": "RightMiddleProximal",
+    "unreal": "middle_01_r"
+  },
+  "RightHandMiddle2": {
+    "unity": "RightMiddleIntermediate",
+    "unreal": "middle_02_r"
+  },
+  "RightHandMiddle3": {
+    "unity": "RightMiddleDistal",
+    "unreal": "middle_03_r"
+  },
+  "RightHandRing1": {
+    "unity": "RightRingProximal",
+    "unreal": "ring_01_r"
+  },
+  "RightHandRing2": {
+    "unity": "RightRingIntermediate",
+    "unreal": "ring_02_r"
+  },
+  "RightHandRing3": {
+    "unity": "RightRingDistal",
+    "unreal": "ring_03_r"
+  },
+  "RightHandPinky1": {
+    "unity": "RightLittleProximal",
+    "unreal": "pinky_01_r"
+  },
+  "RightHandPinky2": {
+    "unity": "RightLittleIntermediate",
+    "unreal": "pinky_02_r"
+  },
+  "RightHandPinky3": {
+    "unity": "RightLittleDistal",
+    "unreal": "pinky_03_r"
+  }
+}

@@ -8,18 +8,26 @@ import {
   type UploadedWorkflowAsset,
 } from "@/lib/workflow/runner";
 
+vi.mock("@fal-ai/client", () => ({ fal: { queue: { submit: vi.fn(() => { throw new Error("Network forbidden in dry runs"); }) } } }));
+
 // Pure graph construction and dry runs must never initialize the live database.
 vi.mock("@/lib/db/client", () => { throw new Error("Dry run accessed the database"); });
 
 describe("workflow runner", () => {
   it.each([
-    "image-prompt-mesh.json", "image-to-3d.hunyuan.json",
+    "character-atlas.json", "image-prompt-mesh.json", "image-to-3d.hunyuan.json",
     "image-to-video.seedance.json", "reference-to-video.veo.json",
   ])("validates the documented %s graph without side effects", async (name) => {
     const workflow = await loadWorkflowDefinition(`examples/workflows/${name}`);
     const summary = await runWorkflow(workflow, { dryRun: true });
     expect(summary.graph.nodes).toHaveLength(workflow.nodes.length);
     expect(summary.nodesRun).toEqual([]);
+  });
+  it("plans the character chain with its full cost", async () => {
+    const summary = await runWorkflow(await loadWorkflowDefinition("examples/workflows/character-atlas.json"), { dryRun: true });
+    expect(summary.plan?.map((n) => n.type)).toEqual(["prompt", "multiview", "mesh", "bake", "rig", "animate", "export"]);
+    expect(summary.unknownCostNodes).toEqual([]);
+    expect(summary.estimatedKnownCostUsd).toBeCloseTo(2.22);
   });
   it("parses workflow defaults", () => {
     const workflow = parseWorkflowDefinition({

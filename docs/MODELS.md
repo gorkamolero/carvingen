@@ -149,3 +149,7 @@ Any node that has submitted a fal job and is waiting for a result shows a clear 
 - Uploaded file dropped but the `/api/assets/upload` call hasn't resolved yet: empty preview area with the striped overlay and a `UPLOADING…` mono line. Once the server returns, swap to the preview.
 
 **Global rule.** No skeleton shimmer. No rotating spinners. Loading = striped overlay + monospace status line. Consistent across node types.
+
+## Character models
+
+See [CHARACTER_PIPELINE.md](CHARACTER_PIPELINE.md) for the verified Tripo P2/H3.1/remesh and Meshy rig/multi-animation input fields, price units and output behavior. Free OpenAPI/pricing/catalogue snapshots are checked into `docs/fal-schemas/`. Nano Banana 2 text/edit price was refreshed to $0.08/image on 2026-11-03. No real provider generation was used during implementation.

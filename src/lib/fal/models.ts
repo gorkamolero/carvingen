@@ -44,7 +44,7 @@ export const IMAGE_MODEL_CAPABILITIES: Record<ImageModelBase, ModelCapability> =
   "fal-ai/nano-banana-2": {
     displayName: "Nano Banana 2",
     tagline: "Quick, cheap drafts",
-    estimateByResolution: { "1K": 0.04 },
+    estimateByResolution: { "1K": 0.08 },
     aspectRatios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
     resolutions: ["1K"],
     maxReferences: 14,

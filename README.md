@@ -14,8 +14,8 @@ The first pieces were made by hand: prompts in a chat, images saved in folders, 
 
 ## What is in it
 
-- **Nodes:** Image, Prompt, Vision, Video, Mesh and Viewer. Up to 14 reference images on Nano Banana 2. Every run stays in the node's history. Undo and redo cover every change to the graph.
-- **Models, all through [fal](https://fal.ai):** Flux Kontext Pro, Nano Banana 2 and Pro, GPT Image 2, Veo 3.1, Seedance, Meshy v6 and Hunyuan 3D.
+- **Nodes:** Image, Prompt, Vision, Video, Mesh, Multi-view, Bake, Rig, Animate, Animation upload, Engine export and Viewer. Up to 14 reference images on Nano Banana 2. Every run stays in the node's history. Undo and redo cover every change to the graph.
+- **Models, all through [fal](https://fal.ai):** Flux Kontext Pro, Nano Banana 2 and Pro, GPT Image 2, Veo 3.1, Seedance, Meshy v6, Hunyuan 3D, Tripo P2 and H3.1.
 - **3D:** GLB, FBX, USDZ, OBJ and STL downloads, and a model viewer.
 - **Scripts:** run a whole canvas from JSON (`pnpm workflow`), and batch characters through multi-view, Meshy rigging and animation, and packing for games (`pnpm characters`, `pnpm character:pack`). See [`docs/WORKFLOW_JSON.md`](docs/WORKFLOW_JSON.md).
 - **Stack:** Next.js 16, React 19, React Flow, Valtio, TanStack Query, SQLite with Drizzle, and a local folder for generated assets.
@@ -58,3 +58,25 @@ pnpm build
 ```
 
 `/portfolio-demo` is a read-only page with fixture data and no provider calls, for showing the layout without spending anything.
+
+## From a character image to a game-ready FBX
+
+![The character chain on the canvas: a prompt image, Multi-view, a Tripo mesh, a Blender bake, Rig, Animate and Engine export, each followed by a Viewer](docs/images/character-atlas-canvas.png)
+
+The canvas also takes one character image all the way to rigged, animated FBX files for a game engine:
+
+1. **Multi-view** turns the image into T-pose front, side and back views and separate equipment cutouts, with Nano Banana 2.
+2. **Mesh** builds the model with Tripo P2 or H3.1 (face count, quad topology, PBR and texture options), Meshy v6 or Hunyuan 3D.
+3. **Bake** brings it down to a triangle budget in local Blender and bakes the colour onto the low-poly mesh. Tripo remesh is the other engine.
+4. **Rig** adds a humanoid skeleton through Meshy, with Mixamo-style bone names.
+5. **Animate** applies presets from Meshy's library of 656 clips in one call, and retargets your own FBX, BVH or GLB clips in Blender.
+6. **Engine export** renames the bones for Unity Humanoid or Unreal UE5, checks the triangle budget, and writes one FBX per clip plus a manifest.
+
+The Viewer plays the clips. One character costs about $2.22 on fal; Blender steps are free. Blender 5 must be installed (`BLENDER_PATH`, default `/opt/homebrew/bin/blender`).
+
+```bash
+pnpm workflow examples/workflows/character-atlas.json --dry-run
+pnpm exec tsx scripts/blender-smoke.ts
+```
+
+The dry run checks the chain without spending; the smoke test checks the Blender steps on a generated mesh. Details are in [`docs/CHARACTER_PIPELINE.md`](docs/CHARACTER_PIPELINE.md), and what the verification run cost is in [`docs/COSTS.md`](docs/COSTS.md).

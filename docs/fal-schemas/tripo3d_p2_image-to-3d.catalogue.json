@@ -1,0 +1,36 @@
+{
+  "models": [
+    {
+      "endpoint_id": "tripo3d/p2/image-to-3d",
+      "metadata": {
+        "display_name": "Tripo P2 Image to 3D",
+        "category": "image-to-3d",
+        "description": "Tripo P2 generates 3D models from a single image, with optional PBR textures, adjustable face counts, and triangle or quad mesh topology.",
+        "status": "active",
+        "tags": [
+          "3d",
+          "image-to-3d",
+          "3d-generation",
+          "low-poly",
+          "pbr",
+          "tripo"
+        ],
+        "updated_at": "2026-10-18T16:18:44.556Z",
+        "is_favorited": false,
+        "thumbnail_url": "https://v3b.fal.media/files/b/0aab5c22/iR7ETXMnNL1Kgpj5bWU5k.jpg",
+        "model_url": "https://fal.run/tripo3d/p2/image-to-3d",
+        "license_type": "commercial",
+        "date": "2026-09-20T07:40:42.138Z",
+        "group": {
+          "key": "tripo-p2",
+          "label": "Image to 3D"
+        },
+        "highlighted": false,
+        "kind": "inference",
+        "pinned": false
+      }
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

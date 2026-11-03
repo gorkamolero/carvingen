@@ -1,0 +1,29 @@
+{
+  "models": [
+    {
+      "endpoint_id": "fal-ai/nano-banana-2/edit",
+      "metadata": {
+        "display_name": "Nano Banana 2",
+        "category": "image-to-image",
+        "description": "Nano Banana 2 is Google's new state-of-the-art image generation and editing model\n",
+        "status": "active",
+        "tags": [],
+        "updated_at": "2026-10-20T22:20:30.114Z",
+        "is_favorited": false,
+        "thumbnail_url": "https://v3b.fal.media/files/b/0a900b75/DHb_RgXoXsYLdvzQz6mdn_95e87a44239c43448939b4c382dd957c.jpg",
+        "model_url": "https://fal.run/fal-ai/nano-banana-2/edit",
+        "license_type": "commercial",
+        "date": "2026-02-26T16:20:09.685Z",
+        "group": {
+          "key": "nano-banana-2",
+          "label": "Image Editing"
+        },
+        "highlighted": false,
+        "kind": "inference",
+        "pinned": false
+      }
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

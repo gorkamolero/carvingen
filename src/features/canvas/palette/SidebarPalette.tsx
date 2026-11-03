@@ -1,7 +1,7 @@
 "use client";
 
 type PaletteItem = {
-  type: "image" | "prompt" | "vision" | "mesh";
+  type: import("@/lib/graph/types").CarvingNode["type"];
   label: string;
   accent: string;          // tailwind bg-[color] class for the accent strip
   hoverTint: string;       // tailwind bg-[color] class for the tile hover wash
@@ -47,11 +47,16 @@ const paletteItems: PaletteItem[] = [
   { type: "prompt", label: "Prompt", accent: "bg-[#ffd400]", hoverTint: "hover:bg-[#fff7bf]", Icon: Icons.prompt },
   { type: "vision", label: "Vision", accent: "bg-[#ff8a3d]", hoverTint: "hover:bg-[#ffe8d5]", Icon: Icons.vision },
   { type: "mesh", label: "Mesh", accent: "bg-[#3e8cff]", hoverTint: "hover:bg-[#dce9ff]", Icon: Icons.mesh },
+  ...(["multiview", "bake", "rig", "animate", "animation", "export", "viewer"] as const).map((type) => ({
+    type, label: ({ multiview: "Multi-view", bake: "Bake", rig: "Rig", animate: "Animate", animation: "Clip upload", export: "Export", viewer: "Viewer" })[type],
+    accent: "bg-[#ffd400]", hoverTint: "hover:bg-[#fff7bf]",
+    Icon: () => <span className="flex h-full items-center justify-center text-xl font-black" aria-hidden>{({ multiview: "▦", bake: "▧", rig: "⚒", animate: "▶", animation: "↑", export: "⇥", viewer: "◉" })[type]}</span>,
+  })),
 ];
 
 export function SidebarPalette() {
   return (
-    <aside className="flex w-28 shrink-0 flex-col items-stretch gap-3 border-r-[3px] border-black bg-[#efe8cd] px-3 py-4">
+    <aside className="overflow-y-auto flex w-28 shrink-0 flex-col items-stretch gap-3 border-r-[3px] border-black bg-[#efe8cd] px-3 py-4">
       <div className="pb-0.5 text-center text-[9px] font-black uppercase tracking-[0.22em] text-black/55">
         Drag onto canvas
       </div>
@@ -91,7 +96,7 @@ function PaletteTile({ item }: { item: PaletteItem }) {
           <Icon />
         </span>
       </span>
-      <span className="border-t-[3px] border-black bg-[#f9f5e8] py-1 pl-[9px] text-center text-[10px] font-black uppercase leading-none tracking-[0.16em]">
+      <span className="border-t-[3px] border-black bg-[#f9f5e8] py-1 pl-[9px] text-center text-[9px] font-black uppercase leading-none tracking-[0.08em]">
         {label}
       </span>
     </button>

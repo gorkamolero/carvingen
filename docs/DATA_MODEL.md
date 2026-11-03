@@ -173,3 +173,15 @@ export function markDownstreamInputsChanged(
   );
 }
 ```
+
+## Character pipeline schema
+
+Canonical Zod definitions: `src/lib/character/schema.ts`; discriminated graph members are registered in `src/lib/graph/types.ts` and `serialization.ts`. New kinds: `multiview`, `bake`, `rig`, `animate`, `animation`, `export`. New edge kind `animation` uses `animation-out`/`animation-in`. Mesh/processing outputs use `glb-out` and mesh consumers use `glb-in`.
+
+Shared persisted fields: `activeJobId`, `outputAssetId` (primary/combined GLB), append-only `outputAssetIds`, latest-run `artifactAssetIds` by semantic name, `activeAssetId` (selected multi-view image), upload `assetId`/`fileName`, `inputsChangedSinceLastRun`, `runStatus`, `errorMessage`, `collapsed`, `triangleCount`, `boneNames`, `budgetPass`, `rigTaskId`.
+
+Parameters: `includeBack=true`, `equipment="weapons, shield, backpack"`; `engine="blender"|"tripo"`, `targetTriangles=12000`, `keepUvs=false`, `textureSize=2048`, `quad=false`; `heightMeters=1.8`; `presetIds=[0,30]` (Idle, Casual_Walk); `characterName="Character"`, `target="unity"|"unreal"`, `triangleBudget=15000`. Unused shared fields are ignored for the corresponding operation.
+
+Mesh adds `provider="tripo-p2"|"tripo-h31"`, append-only `outputAssetIds`, and validated `tripo*` controls from `tripoOptionsSchema`. Legacy graph rows receive defaults on deserialization.
+
+No SQLite migration is required: node data remains JSON. The jobs provider may be `local` for the server-managed orchestrator (including its fal subrequests); progress/status is stored in `responseSummaryJson` until replaced with completed assets and measurements. The original `/api/jobs` browser-managed fal flow remains supported.

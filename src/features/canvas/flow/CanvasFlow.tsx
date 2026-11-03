@@ -48,7 +48,7 @@ export function CanvasFlow() {
     const paletteData = event.dataTransfer.getData("application/carvingen-node");
     if (paletteData) {
       const parsed = JSON.parse(paletteData) as {
-        nodeType: "prompt" | "image" | "mesh" | "viewer" | "vision";
+        nodeType: CarvingNode["type"];
       };
       addCanvasNode(parsed.nodeType, position);
       return;
@@ -122,7 +122,7 @@ export function CanvasFlow() {
 
   const onConnectEnd = useCallback<OnConnectEnd>(
     (event, connectionState) => {
-      if (connectionState.isValid || !connectionState.fromNode || !flowRef.current) {
+      if (connectionState.isValid || connectionState.fromHandle?.id !== "image-out" || !connectionState.fromNode || !flowRef.current) {
         return;
       }
 

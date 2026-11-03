@@ -1,3 +1,7 @@
+import { createPipelineData } from "@/lib/character/schema";
+import { characterInputs, resultPatch } from "@/lib/character/client";
+import { estimateNodeCost } from "@/lib/fal/pricing";
+import { canConnectNodes } from "@/lib/graph/connections";
 import { readFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 
@@ -8,7 +12,6 @@ import { z } from "zod";
 
 import { getServerEnv } from "@/lib/env";
 import { buildImageRequest, pickImageSlug } from "@/lib/fal/image";
-import { buildMeshRequest, extractMeshArtifacts, pickMeshSlug } from "@/lib/fal/mesh";
 import { buildVideoRequest, extractVideoUrl, pickVideoSlug } from "@/lib/fal/video";
 import { buildVisionRequest, extractVisionAnswer, pickVisionSlug } from "@/lib/fal/vision";
 import { getHandleKind } from "@/lib/graph/connections";
@@ -48,7 +51,7 @@ const workflowAssetSchema = z.object({
 
 const workflowNodeSchema = z.object({
   id: z.string().min(1).optional(),
-  type: z.enum(["image", "prompt", "vision", "video", "mesh", "viewer"]),
+  type: z.enum(["image", "prompt", "vision", "video", "mesh", "viewer", "multiview", "bake", "rig", "animate", "animation", "export"]),
   position: positionSchema.default({ x: 0, y: 0 }),
   asset: z.string().optional(),
   data: z.record(z.string(), z.unknown()).optional().default({}),
@@ -103,6 +106,9 @@ export type WorkflowSummary = {
   nodesRun: string[];
   outputs: Record<string, Array<{ assetId: string; kind: string; url: string }>>;
   graph: ProjectGraph;
+  plan?: Array<{ id: string; type: string; estimate: string }>;
+  estimatedKnownCostUsd?: number;
+  unknownCostNodes?: string[];
 };
 
 type RunContext = {
@@ -154,6 +160,7 @@ export function buildWorkflowGraph(input: {
   const edges = input.workflow.edges.map((edge) => {
     const source = idMap.get(edge.source) ?? edge.source;
     const target = idMap.get(edge.target) ?? edge.target;
+    if (!nodes.some((n) => n.id === source) || !nodes.some((n) => n.id === target) || !canConnectNodes({ source, target, sourceHandle: edge.sourceHandle, targetHandle: edge.targetHandle }, nodes.find((n) => n.id === source)!.type!, nodes.find((n) => n.id === target)!.type!)) throw new ApiError(400, `Invalid connection ${edge.source} -> ${edge.target}`);
     const kind = getHandleKind(edge.sourceHandle) ?? getHandleKind(edge.targetHandle);
     if (!kind) {
       throw new ApiError(400, `Unable to infer edge kind for ${edge.sourceHandle} -> ${edge.targetHandle}.`);
@@ -199,8 +206,14 @@ export async function runWorkflow(workflow: WorkflowDefinition, options: Workflo
     dryRun,
   });
 
+  const ordered = topologicalSort(workflow);
   if (dryRun) {
+    const planned = ordered.filter((n) => n.run).map((n) => graph.nodes.find((g) => g.id === n.id)!);
+    for (const node of planned) { if (["image", "animation", "viewer"].includes(node.type!)) throw new ApiError(400, `${node.type} is not runnable`); }
     return {
+      plan: planned.map((n) => ({ id: n.id, type: n.type!, estimate: estimateNodeCost(n).label })),
+      estimatedKnownCostUsd: planned.reduce((s, n) => s + (estimateNodeCost(n).usd ?? 0), 0),
+      unknownCostNodes: planned.filter((n) => estimateNodeCost(n).usd === null).map((n) => n.id),
       projectId: graph.id,
       projectName: graph.name,
       dryRun: true,
@@ -268,6 +281,17 @@ function createWorkflowNode(input: {
   const position = definition.position ?? { x: 160 + fallbackIndex * 360, y: 180 };
 
   switch (definition.type) {
+    case "animation": {
+      const asset = definition.asset ? input.assetsById.get(definition.asset) : null;
+      if (definition.asset && !asset) throw new ApiError(400, `Unknown animation asset ${definition.asset}`);
+      return { id: nodeId, type: "animation", position, data: { ...createPipelineData(), ...definition.data, assetId: asset?.assetId ?? null, fileName: asset ? basename(asset.path) : null } } satisfies CarvingNode;
+    }
+    case "multiview":
+    case "bake":
+    case "rig":
+    case "animate":
+    case "export":
+      return { id: nodeId, type: definition.type, position, data: { ...createPipelineData(), ...definition.data } } as CarvingNode;
     case "image": {
       const asset = definition.asset ? input.assetsById.get(definition.asset) : null;
       if (definition.asset && !asset) {
@@ -403,7 +427,7 @@ async function uploadLocalImage(path: string) {
 
   const asset = await createAssetRecord({
     id: nanoid(),
-    kind: "image",
+    kind: normalized.mimeType.startsWith("image/") ? "image" : normalized.extension.slice(1),
     mimeType: normalized.mimeType,
     localPath,
     sourceUrl: null,
@@ -488,7 +512,12 @@ async function runNode(context: RunContext, node: CarvingNode) {
     case "video":
       return runVideoNode(context, node);
     case "mesh":
-      return runMeshNode(context, node);
+    case "multiview":
+    case "bake":
+    case "rig":
+    case "animate":
+    case "export":
+      return runCharacterNode(context, node);
     case "vision":
       return runVisionNode(context, node);
     default:
@@ -582,70 +611,22 @@ async function runVideoNode(context: RunContext, node: Extract<CarvingNode, { ty
   addOutput(context, node.id, "video", asset.id);
 }
 
-async function runMeshNode(context: RunContext, node: Extract<CarvingNode, { type: "mesh" }>) {
-  const { persistRemoteAsset } = await import("@/lib/storage/persist-remote");
-  const { completeJob } = await import("@/lib/db/repositories/jobs");
-  const imageUrls = getIncomingImageUrlsForNode(context, node.id);
-  const provider = node.data.provider ?? "meshy";
-  const slug = pickMeshSlug(node.data.mode, provider, {
-    meshyUseMultiview: node.data.meshyUseMultiview,
-  });
-  const input = buildMeshRequest({
-    imageUrls,
-    mode: node.data.mode,
-    provider,
-    meshyUseMultiview: node.data.meshyUseMultiview,
-    meshyPolyMode: node.data.meshyPolyMode,
-    meshyTopology: node.data.meshyTopology,
-    meshyTargetPolycount: node.data.meshyTargetPolycount,
-    meshySymmetryMode: node.data.meshySymmetryMode,
-    meshyShouldRemesh: node.data.meshyShouldRemesh,
-    meshyShouldTexture: node.data.meshyShouldTexture,
-    meshyEnablePbr: node.data.meshyEnablePbr,
-    meshyPoseMode: node.data.meshyPoseMode,
-    meshyEnableRigging: node.data.meshyEnableRigging,
-    meshyRiggingHeightMeters: node.data.meshyRiggingHeightMeters,
-    meshyEnableAnimation: node.data.meshyEnableAnimation,
-    meshyAnimationActionId: node.data.meshyAnimationActionId,
-    hunyuanViewSlots: node.data.hunyuanViewSlots,
-    hunyuanGenerateType: node.data.hunyuanGenerateType,
-    hunyuanEnablePbr: node.data.hunyuanEnablePbr,
-    hunyuanFaceCount: node.data.hunyuanFaceCount,
-  });
-  const result = await submitFalJob(context, node.id, slug, input);
-  const artifacts = extractMeshArtifacts(result);
-  const saved = await Promise.all(
-    artifacts.map(async (artifact) => {
-      const asset = await persistRemoteAsset({
-        sourceUrl: artifact.sourceUrl,
-        kind: artifact.kind,
-        jobId: result.jobId,
-      });
-      if (!asset) {
-        throw new Error(`Failed to persist ${artifact.kind} output for node ${node.id}.`);
-      }
-      return { kind: artifact.kind, assetId: asset.id };
-    }),
-  );
-
-  const byKind = Object.fromEntries(saved.map((asset) => [asset.kind, asset.assetId]));
-  node.data.outputAssetId = byKind.glb ?? null;
-  node.data.thumbnailAssetId = byKind.thumbnail ?? null;
-  node.data.artifactAssetIds = byKind;
-  node.data.activeJobId = null;
-  node.data.inputsChangedSinceLastRun = false;
-  node.data.runStatus = null;
-  node.data.errorMessage = null;
-  await completeJob({
-    id: result.jobId,
-    state: "succeeded",
-    responseSummary: result.data as Record<string, unknown>,
-    outputAssetIds: saved.map((asset) => asset.assetId),
-  });
-  context.nodesRun.push(node.id);
-
-  for (const asset of saved) {
-    addOutput(context, node.id, asset.kind, asset.assetId);
+async function runCharacterNode(context: RunContext, node: Extract<CarvingNode, { type: "mesh" | "multiview" | "bake" | "rig" | "animate" | "export" }>) {
+  const { startCharacterJob, characterJobStatus } = await import("@/lib/character/jobs");
+  const job = await startCharacterJob(node.type, { projectId: context.projectId, nodeId: node.id, data: node.data, publicUrl: context.publicUrl, providerUrls: Object.fromEntries(context.providerUrlsByAssetId), ...characterInputs(node, context.graph.nodes, context.graph.edges) });
+  node.data.activeJobId = job.jobId;
+  const { saveProjectGraph } = await import("@/lib/db/repositories/projects");
+  await saveProjectGraph(context.graph);
+  while (true) {
+    const status = await characterJobStatus(job.jobId);
+    if (status.state === "failed") { node.data.activeJobId = null; node.data.errorMessage = status.error; await saveProjectGraph(context.graph); throw new Error(status.error ?? "Character job failed"); }
+    if (status.state === "succeeded") {
+      const result = status.result as import("@/lib/character/jobs").PipelineResult;
+      Object.assign(node.data, resultPatch(result, node.data));
+      for (const a of result.assets) addOutput(context, node.id, a.kind, a.assetId);
+      context.nodesRun.push(node.id); return;
+    }
+    await new Promise((r) => setTimeout(r, 2000));
   }
 }
 
@@ -724,6 +705,7 @@ function getIncomingImageUrlsForNode(context: RunContext, nodeId: string) {
 }
 
 function getNodeImageAssetId(node: CarvingNode) {
+  if (node.type === "multiview") return node.data.activeAssetId ?? node.data.artifactAssetIds.front ?? null;
   if (node.type === "image") {
     return node.data.assetId;
   }

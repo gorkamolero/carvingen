@@ -1,0 +1,32 @@
+{
+  "models": [
+    {
+      "endpoint_id": "tripo3d/tripo/remesh",
+      "metadata": {
+        "display_name": "Tripo3D Remesh",
+        "category": "3d-to-3d",
+        "description": "Converts triangle meshes into clean quad topology at a target polygon count, animation-ready with no manual retopology.",
+        "status": "active",
+        "tags": [
+          "stylized",
+          "transform"
+        ],
+        "updated_at": "2026-08-06T20:23:54.536Z",
+        "is_favorited": false,
+        "thumbnail_url": "https://v3b.fal.media/files/b/0aa54846/p3ydtPbP_CPp-9oWvXwzk.jpg",
+        "model_url": "https://fal.run/tripo3d/tripo/remesh",
+        "license_type": "commercial",
+        "date": "2026-08-06T18:31:27.150Z",
+        "group": {
+          "key": "tripo3d",
+          "label": "remesh"
+        },
+        "highlighted": false,
+        "kind": "inference",
+        "pinned": false
+      }
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

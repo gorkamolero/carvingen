@@ -1,0 +1,574 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Queue OpenAPI for tripo3d/tripo/v2.5/multiview-to-3d",
+    "version": "1.0.0",
+    "description": "The OpenAPI schema for the tripo3d/tripo/v2.5/multiview-to-3d queue.",
+    "x-fal-metadata": {
+      "endpointId": "tripo3d/tripo/v2.5/multiview-to-3d",
+      "category": "image-to-3d",
+      "thumbnailUrl": "https://v3b.fal.media/files/b/0a9f922c/RX98se6CNyskvVJVV4yMj_oFMwwAhM.png",
+      "playgroundUrl": "https://fal.ai/models/tripo3d/tripo/v2.5/multiview-to-3d",
+      "documentationUrl": "https://fal.ai/models/tripo3d/tripo/v2.5/multiview-to-3d/api",
+      "about": "Multiview To 3D"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Fal Key"
+      }
+    },
+    "schemas": {
+      "QueueStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_QUEUE",
+              "IN_PROGRESS",
+              "COMPLETED"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "description": "The request id."
+          },
+          "response_url": {
+            "type": "string",
+            "description": "The response url."
+          },
+          "status_url": {
+            "type": "string",
+            "description": "The status url."
+          },
+          "cancel_url": {
+            "type": "string",
+            "description": "The cancel url."
+          },
+          "logs": {
+            "type": "object",
+            "description": "The logs.",
+            "additionalProperties": true
+          },
+          "metrics": {
+            "type": "object",
+            "description": "The metrics.",
+            "additionalProperties": true
+          },
+          "queue_position": {
+            "type": "integer",
+            "description": "The queue position."
+          }
+        },
+        "required": [
+          "status",
+          "request_id"
+        ]
+      },
+      "TripoV25MultiviewTo3dInput": {
+        "x-fal-order-properties": [
+          "seed",
+          "face_limit",
+          "pbr",
+          "texture",
+          "texture_seed",
+          "auto_size",
+          "style",
+          "quad",
+          "texture_alignment",
+          "orientation",
+          "front_image_url",
+          "left_image_url",
+          "back_image_url",
+          "right_image_url"
+        ],
+        "required": [
+          "front_image_url"
+        ],
+        "title": "MultiviewTo3dInput",
+        "type": "object",
+        "properties": {
+          "front_image_url": {
+            "examples": [
+              "https://platform.tripo3d.ai/assets/front-235queJB.jpg"
+            ],
+            "title": "Front Image Url",
+            "description": "Front view image of the object.",
+            "type": "string"
+          },
+          "left_image_url": {
+            "examples": [
+              "https://platform.tripo3d.ai/assets/left-Nfdj2U8P.jpg"
+            ],
+            "title": "Left Image Url",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Left view image of the object."
+          },
+          "texture_alignment": {
+            "default": "original_image",
+            "title": "Texture Alignment",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "original_image",
+                  "geometry"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Determines the prioritization of texture alignment in the 3D model. The default value is original_image."
+          },
+          "pbr": {
+            "default": false,
+            "title": "Pbr",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A boolean option to enable pbr. The default value is True, set False to get a model without pbr. If this option is set to True, texture will be ignored and used as True."
+          },
+          "texture": {
+            "default": "standard",
+            "title": "Texture",
+            "description": "An option to enable texturing. Default is 'standard', set 'no' to get a model without any textures, and set 'HD' to get a model with hd quality textures.",
+            "type": "string",
+            "enum": [
+              "no",
+              "standard",
+              "HD"
+            ]
+          },
+          "texture_seed": {
+            "title": "Texture Seed",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This is the random seed for texture generation. Using the same seed will produce identical textures. This parameter is an integer and is randomly chosen if not set. If you want a model with different textures, please use same seed and different texture_seed."
+          },
+          "back_image_url": {
+            "examples": [
+              "https://platform.tripo3d.ai/assets/back-6vq1a8L4.jpg"
+            ],
+            "title": "Back Image Url",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Back view image of the object."
+          },
+          "right_image_url": {
+            "examples": [
+              "https://platform.tripo3d.ai/assets/right-hj57H4if.jpg"
+            ],
+            "title": "Right Image Url",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Right view image of the object."
+          },
+          "face_limit": {
+            "title": "Face Limit",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Limits the number of faces on the output model. If this option is not set, the face limit will be adaptively determined."
+          },
+          "auto_size": {
+            "default": false,
+            "title": "Auto Size",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Automatically scale the model to real-world dimensions, with the unit in meters. The default value is False."
+          },
+          "style": {
+            "title": "Style",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "person:person2cartoon",
+                  "object:clay",
+                  "object:steampunk",
+                  "animal:venom",
+                  "object:barbie",
+                  "object:christmas",
+                  "gold",
+                  "ancient_bronze"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "description": "[DEPRECATED] Defines the artistic style or transformation to be applied to the 3D model, altering its appearance according to preset options (extra $0.05 per generation). Omit this option to keep the original style and apperance."
+          },
+          "quad": {
+            "default": false,
+            "title": "Quad",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set True to enable quad mesh output (extra $0.05 per generation). If quad=True and face_limit is not set, the default face_limit will be 10000. Note: Enabling this option will force the output to be an FBX model."
+          },
+          "orientation": {
+            "default": "default",
+            "title": "Orientation",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "default",
+                  "align_image"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set orientation=align_image to automatically rotate the model to align the original image. The default value is default."
+          },
+          "seed": {
+            "title": "Seed",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This is the random seed for model generation. The seed controls the geometry generation process, ensuring identical models when the same seed is used. This parameter is an integer and is randomly chosen if not set."
+          }
+        }
+      },
+      "TripoV25MultiviewTo3dOutput": {
+        "x-fal-order-properties": [
+          "task_id",
+          "model_mesh",
+          "base_model",
+          "pbr_model",
+          "rendered_image"
+        ],
+        "required": [
+          "task_id"
+        ],
+        "title": "Tripo3dOutput",
+        "type": "object",
+        "properties": {
+          "rendered_image": {
+            "examples": [
+              {
+                "url": "https://v3.fal.media/files/panda/zDTAHqp8ifMOT3upZ1xJv_legacy.webp",
+                "file_size": 13718,
+                "content_type": "image/webp"
+              }
+            ],
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A preview image of the model"
+          },
+          "base_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Base model"
+          },
+          "pbr_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Pbr model"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "description": "The task id of the 3D model generation.",
+            "type": "string"
+          },
+          "model_mesh": {
+            "examples": [
+              {
+                "url": "https://v3.fal.media/files/zebra/NA4WkhbpI-XdOIFc4cDIk_tripo_model_812c3a8a-6eb3-4c09-9f40-0563d27ae7ea.glb",
+                "file_size": 6744644,
+                "content_type": "application/octet-stream"
+              }
+            ],
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Model"
+          }
+        }
+      },
+      "File": {
+        "x-fal-order-properties": [
+          "url",
+          "content_type",
+          "file_name",
+          "file_size"
+        ],
+        "required": [
+          "url"
+        ],
+        "title": "File",
+        "type": "object",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "description": "The URL where the file can be downloaded from.",
+            "type": "string"
+          },
+          "file_name": {
+            "examples": [
+              "z9RV14K95DvU.png"
+            ],
+            "title": "File Name",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The name of the file. It will be auto-generated if not provided."
+          },
+          "file_size": {
+            "examples": [
+              4404019
+            ],
+            "title": "File Size",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The size of the file in bytes."
+          },
+          "content_type": {
+            "examples": [
+              "image/png"
+            ],
+            "title": "Content Type",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The mime type of the file."
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/tripo3d/tripo/v2.5/multiview-to-3d/requests/{request_id}/status": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          },
+          {
+            "name": "logs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "description": "Whether to include logs (`1`) in the response or not (`0`)."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/tripo/v2.5/multiview-to-3d/requests/{request_id}/cancel": {
+      "put": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the request was cancelled successfully."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/tripo/v2.5/multiview-to-3d": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripoV25MultiviewTo3dInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/tripo/v2.5/multiview-to-3d/requests/{request_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Result of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripoV25MultiviewTo3dOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://queue.fal.run"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}

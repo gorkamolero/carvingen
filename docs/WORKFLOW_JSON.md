@@ -323,3 +323,17 @@ The CLI prints JSON:
   "graph": {}
 }
 ```
+
+## Character Atlas
+
+```bash
+pnpm workflow examples/workflows/character-atlas.json --dry-run
+```
+
+The dry run validates schemas, handles and topology without database access or network calls, and prints `plan`, `estimatedKnownCostUsd`, `unknownCostNodes` and graph. For this example it prints about $2.22: one reference image, five multi-view images, a textured Tripo P2 model, a rig and two clips. Bake and Export run in local Blender and cost nothing.
+
+New runnable types are `multiview`, `bake`, `rig`, `animate`, `export`; `animation` is an upload source and must not set `run:true`. These nodes use the same job executor as the canvas. `animation` accepts an `asset` reference to a local `.fbx`, `.bvh` or `.glb`, just as Image references a local image. Connect `animation-out` to Animate's `animation-in`. Connect each mesh stage with `glb-out` → `glb-in`.
+
+The example generates a full-body character reference, front/side/back and two equipment cutouts, textured P2 mesh, 12000-triangle bake with 2048 texture, 1.8m rig, Idle (0) and Casual_Walk (30), and Unity export at a 15000-triangle budget. A Viewer follows each of Mesh, Bake, Rig, Animate and Export. The default mesh uses the front image. For H3.1 multi-view use `provider:"tripo-h31", tripoMultiview:true`; the executor gathers ordered views from Multi-view.
+
+All node parameters are documented in [DATA_MODEL.md](DATA_MODEL.md) and [CHARACTER_PIPELINE.md](CHARACTER_PIPELINE.md). Files made on this machine, such as a Blender bake, have no public URL, so the job uploads them to fal storage before a fal step reads them; no tunnel or `PUBLIC_URL` is needed. Blender runs on the host running the server (`BLENDER_PATH`, default `/opt/homebrew/bin/blender`). A real run spends money. The dry run does not. What one verified run cost is in [COSTS.md](COSTS.md).

@@ -1,0 +1,12 @@
+{
+  "prices": [
+    {
+      "endpoint_id": "tripo3d/tripo/remesh",
+      "unit_price": 0.01,
+      "unit": "units",
+      "currency": "USD"
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

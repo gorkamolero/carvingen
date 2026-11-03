@@ -235,3 +235,18 @@ Rename. Body: `{ name: string }`.
 - **Output URLs expire.** fal's result URLs are CDN-hosted and not guaranteed permanent. **Always** call `/api/assets/persist` before considering a job done. The Asset row is the authoritative pointer.
 - **No retries server-side.** Failures bubble to the client; the user decides to re-Run.
 - **No rate limiting on our side.** fal's own throttling surfaces through the SDK as errors.
+
+## Server-managed character jobs
+
+POST `/api/jobs/mesh`, `/api/jobs/multiview`, `/api/jobs/bake`, `/api/jobs/rig`, `/api/jobs/animate`, `/api/jobs/export` accept:
+
+```ts
+{ projectId: string; nodeId: string; data: Record<string, unknown>;
+  imageAssetIds?: string[]; meshAssetIds?: string[]; animationAssetIds?: string[] }
+```
+
+Returns HTTP 202 `{jobId}`. Inputs reference existing assets, not arbitrary local filesystem paths. Provider secrets remain server-side. GET `/api/jobs/:id` returns `{id,state,error,result}`; running result contains `{progress,status}` and successful result contains `{assets:[{name,kind,assetId}],outputAssetId,triangleCount?,boneNames?,rigTaskId?,budgetPass?,clips?}`. Existing assets persist if a new job fails. Job outputs and remote downloads use the existing assets table/storage endpoints.
+
+`POST /api/assets/upload` additionally accepts signature-validated `.glb`, `.fbx` and `.bvh` animation files within the existing upload limit. Their asset kind reflects the format. Multipart requests must not override the browser's generated Content-Type boundary.
+
+The CLI also supplies optional `publicUrl` and `providerUrls` (asset-ID → provider URL) to preserve `--public-url` and `--fal-storage-inputs` behavior for server-managed mesh stages. Asset IDs must still resolve locally; these overrides only change the URL the provider fetches.

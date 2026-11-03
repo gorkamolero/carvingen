@@ -1,3 +1,5 @@
+import { pipelineDataSchema, tripoOptionsSchema, type PipelineData, type PipelineKind } from "@/lib/character/schema";
+export { pipelineDataSchema };
 import type { Edge, Node, Viewport } from "@xyflow/react";
 import { z } from "zod";
 
@@ -10,8 +12,8 @@ import {
   VISION_MODEL_VALUES,
 } from "@/lib/fal/models";
 
-export const nodeTypeSchema = z.enum(["prompt", "image", "mesh", "viewer", "vision", "video"]);
-export const handleIdSchema = z.enum(["image-in", "image-out", "glb-in", "glb-out"]);
+export const nodeTypeSchema = z.enum(["prompt", "image", "mesh", "viewer", "vision", "video", "multiview", "bake", "rig", "animate", "animation", "export"]);
+export const handleIdSchema = z.enum(["image-in", "image-out", "glb-in", "glb-out", "animation-in", "animation-out"]);
 
 const promptVersionSnapshotSchema = z.object({
   prompt: z.string(),
@@ -65,7 +67,9 @@ export const imageNodeDataSchema = z.object({
 });
 
 export const meshNodeDataSchema = z.object({
-  provider: z.enum(["meshy", "hunyuan"]).default("meshy"),
+  ...tripoOptionsSchema.shape,
+  outputAssetIds: z.array(z.string()).default([]),
+  provider: z.enum(["meshy", "hunyuan", "tripo-p2", "tripo-h31"]).default("meshy"),
   meshyUseMultiview: z.boolean().default(false),
   meshyPolyMode: z.enum(["standard", "low"]).default("standard"),
   meshyTopology: z.enum(["triangle", "quad"]).default("triangle"),
@@ -147,8 +151,9 @@ export type MeshNode = Node<MeshNodeData, "mesh">;
 export type ViewerNode = Node<ViewerNodeData, "viewer">;
 export type VisionNode = Node<VisionNodeData, "vision">;
 
-export type CarvingNode = PromptNode | ImageNode | MeshNode | ViewerNode | VisionNode | VideoNode;
-export type EdgeKind = "image" | "glb";
+export type PipelineNode = { [K in PipelineKind]: Node<PipelineData, K> }[PipelineKind];
+export type CarvingNode = PipelineNode | PromptNode | ImageNode | MeshNode | ViewerNode | VisionNode | VideoNode;
+export type EdgeKind = "image" | "glb" | "animation";
 export type CarvingEdge = Edge<{ kind: EdgeKind }>;
 
 export type ProjectGraph = {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  pipelineDataSchema,
   videoNodeDataSchema,
   handleIdSchema,
   imageNodeDataSchema,
@@ -15,6 +16,13 @@ import {
 } from "@/lib/graph/types";
 
 const nodeSchema = z.discriminatedUnion("type", [
+  z.object({ id: z.string(), type: z.literal("multiview"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
+  z.object({ id: z.string(), type: z.literal("bake"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
+  z.object({ id: z.string(), type: z.literal("rig"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
+  z.object({ id: z.string(), type: z.literal("animate"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
+  z.object({ id: z.string(), type: z.literal("animation"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
+  z.object({ id: z.string(), type: z.literal("export"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
+
   z.object({ id: z.string(), type: z.literal("video"), position: z.object({ x: z.number(), y: z.number() }), data: videoNodeDataSchema }),
   z.object({
     id: z.string(),
@@ -54,7 +62,7 @@ const edgeSchema = z.object({
   sourceHandle: handleIdSchema,
   target: z.string(),
   targetHandle: handleIdSchema,
-  data: z.object({ kind: z.enum(["image", "glb"]) }).optional(),
+  data: z.object({ kind: z.enum(["image", "glb", "animation"]) }).optional(),
 });
 
 export const projectGraphSchema = z.object({
@@ -73,6 +81,13 @@ export function parseNodeData(type: z.infer<typeof nodeTypeSchema>, dataJson: st
   const data = JSON.parse(dataJson);
 
   switch (type) {
+    case "multiview":
+    case "bake":
+    case "rig":
+    case "animate":
+    case "animation":
+    case "export":
+      return pipelineDataSchema.parse(data);
     case "video":
       return videoNodeDataSchema.parse(data);
     case "prompt":

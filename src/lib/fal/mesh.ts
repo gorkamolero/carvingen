@@ -1,3 +1,4 @@
+import { CHARACTER_ENDPOINTS, buildTripoRequest } from "@/lib/character/fal";
 import { HUNYUAN_MESH_SLUG, MESHY_MULTI_IMAGE_SLUG, MESH_MODEL_SLUGS, type MeshMode } from "@/lib/fal/models";
 import type { MeshNodeData } from "@/lib/graph/types";
 
@@ -7,7 +8,9 @@ export type MeshRequestInput = Partial<MeshNodeData> & {
   imageUrls?: string[];
 };
 
-export function pickMeshSlug(mode: MeshMode, provider: MeshNodeData["provider"] = "meshy", options: Pick<MeshRequestInput, "meshyUseMultiview"> = {}) {
+export function pickMeshSlug(mode: MeshMode, provider: MeshNodeData["provider"] = "meshy", options: Pick<MeshRequestInput, "meshyUseMultiview" | "tripoMultiview"> = {}) {
+  if (provider === "tripo-p2") return CHARACTER_ENDPOINTS.p2;
+  if (provider === "tripo-h31") return options.tripoMultiview ? CHARACTER_ENDPOINTS.h31Multiview : CHARACTER_ENDPOINTS.h31;
   if (provider === "hunyuan") return HUNYUAN_MESH_SLUG;
   return options.meshyUseMultiview ? MESHY_MULTI_IMAGE_SLUG : MESH_MODEL_SLUGS[mode];
 }
@@ -24,6 +27,7 @@ export function getHunyuanInputAssignments(slots: MeshNodeData["hunyuanViewSlots
 export function buildMeshRequest(input: MeshRequestInput): Record<string, unknown> {
   const imageUrls = input.imageUrls ?? (input.imageUrl ? [input.imageUrl] : []);
   if (!imageUrls.length || imageUrls.some((url) => !url.trim())) throw new Error("Connect an image before running Mesh.");
+  if (input.provider === "tripo-p2" || input.provider === "tripo-h31") return buildTripoRequest(input.provider, input, imageUrls);
   if (input.provider === "hunyuan") {
     const faceCount = input.hunyuanFaceCount ?? 500000;
     if (!Number.isInteger(faceCount) || faceCount < 40000 || faceCount > 1500000) throw new Error("Hunyuan face count must be between 40,000 and 1,500,000.");

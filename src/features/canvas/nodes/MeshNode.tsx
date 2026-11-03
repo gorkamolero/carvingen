@@ -2,22 +2,20 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { useMutation } from "@tanstack/react-query";
-import { fal } from "@fal-ai/client";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { characterInputs, submitCharacterJob, pollCharacterJob, resultPatch } from "@/lib/character/client";
+import { estimateNodeCost } from "@/lib/fal/pricing";
 import { useSnapshot } from "valtio";
 
-import { fetchJson } from "@/lib/api/client";
 import { getAssetUrl } from "@/lib/assets/url";
-import { buildMeshRequest, extractMeshArtifacts, pickMeshSlug } from "@/lib/fal/mesh";
 import { graphHistory, markNodeDirty, updateMeshNode } from "@/lib/graph/store";
 import { getIncomingImageUrls } from "@/lib/graph/selectors";
 import type { MeshNode as MeshGraphNode } from "@/lib/graph/types";
 import { getErrorMessage, showErrorToast, showLoadingToast, showSuccessToast } from "@/lib/notifications/toast";
 import { NodeChrome } from "@/features/canvas/nodes/NodeChrome";
 
-type FalQueueStatus = {
-  status: string;
-};
+
 
 export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
   const graph = useSnapshot(graphHistory.value);
@@ -27,134 +25,31 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
     graph.edges as unknown as import("@/lib/graph/types").CarvingEdge[],
   );
 
+  const query = useQuery({ queryKey: ["character-job", data.activeJobId], queryFn: () => pollCharacterJob(data.activeJobId!), enabled: !!data.activeJobId, refetchInterval: 2000 });
+  useEffect(() => {
+    if (!data.activeJobId || !query.data) return;
+    if (query.data.state === "succeeded" && query.data.result) {
+      const patch = resultPatch(query.data.result, data);
+      updateMeshNode(id, { ...patch, thumbnailAssetId: query.data.result.assets.find((a) => a.kind === "thumbnail")?.assetId ?? null });
+      markNodeDirty(id);
+    } else if (query.data.state === "failed") updateMeshNode(id, { activeJobId: null, errorMessage: query.data.error ?? "Mesh failed" });
+  }, [query.data, data, id]);
   const runMutation = useMutation({
     mutationFn: async () => {
-      if (!graph.activeProjectId) {
-        throw new Error("No active project.");
-      }
-
-      const imageUrl = sourceImages[0];
-      if (!imageUrl) {
-        throw new Error("Connect an image before running Mesh.");
-      }
-
-      const slug = pickMeshSlug(data.mode, data.provider, data);
-      const input = buildMeshRequest({ ...data, imageUrls: sourceImages });
-      const submission = await fal.queue.submit(slug, { input });
-      const job = await fetchJson<{ jobId: string }>("/api/jobs", {
-        method: "POST",
-        body: JSON.stringify({
-          projectId: graph.activeProjectId,
-          nodeId: id,
-          provider: "fal",
-          providerJobId: submission.request_id,
-          providerSlug: slug,
-          requestInput: input,
-        }),
-      });
-
-      updateMeshNode(id, {
-        activeJobId: job.jobId,
-        runStatus: "PENDING",
-        errorMessage: null,
-      });
-
-      let status = (await fal.queue.status(slug, {
-        requestId: submission.request_id,
-        logs: true,
-      })) as FalQueueStatus;
-
-      while (status.status !== "COMPLETED" && status.status !== "FAILED") {
-        updateMeshNode(id, { runStatus: status.status });
-        await new Promise((resolve) => setTimeout(resolve, 2_000));
-        status = (await fal.queue.status(slug, {
-          requestId: submission.request_id,
-          logs: true,
-        })) as FalQueueStatus;
-      }
-
-      if (status.status === "FAILED") {
-        await fetchJson(`/api/jobs/${job.jobId}/complete`, {
-          method: "POST",
-          body: JSON.stringify({
-            state: "failed",
-            error: "Mesh generation failed.",
-          }),
-        });
-        throw new Error("Mesh generation failed.");
-      }
-
-      const result = await fal.queue.result(slug, {
-        requestId: submission.request_id,
-      });
-
-      const artifacts = extractMeshArtifacts(result);
-      const persisted = await Promise.all(
-        artifacts.map(async (artifact) => {
-          const saved = await fetchJson<{ assetId: string; url: string }>(
-            "/api/assets/persist",
-            {
-              method: "POST",
-              body: JSON.stringify({
-                sourceUrl: artifact.sourceUrl,
-                kind: artifact.kind,
-                jobId: job.jobId,
-              }),
-            },
-          );
-
-          return { kind: artifact.kind, assetId: saved.assetId };
-        }),
-      );
-
-      await fetchJson(`/api/jobs/${job.jobId}/complete`, {
-        method: "POST",
-        body: JSON.stringify({
-          state: "succeeded",
-          responseSummary: result.data,
-          outputAssetIds: persisted.map((item) => item.assetId),
-        }),
-      });
-
-      return persisted;
+      if (!graph.activeProjectId) throw new Error("No active project.");
+      const inputs = characterInputs({ id, type: "mesh", data, position: { x: 0, y: 0 } }, graph.nodes as unknown as import("@/lib/graph/types").CarvingNode[], graph.edges as unknown as import("@/lib/graph/types").CarvingEdge[]);
+      return submitCharacterJob("mesh", { projectId: graph.activeProjectId, nodeId: id, data, ...inputs });
     },
-    onMutate: () => {
-      return showLoadingToast({
-        title: "Mesh running",
-        description: data.mode === "refine" ? "Refine pass in progress." : "Preview mesh in progress.",
-      });
+    onMutate: () => showLoadingToast({ title: "Mesh queued", description: "Starting generation" }),
+    onSuccess: (job, _variables, toastId) => {
+      updateMeshNode(id, { activeJobId: job.jobId, errorMessage: null, runStatus: "Queued" });
+      showSuccessToast(toastId, { title: "Mesh submitted", description: "Progress is shown on the node." });
     },
-    onSuccess: (assets, _variables, toastId) => {
-      const artifactAssetIds = Object.fromEntries(assets.map((asset) => [asset.kind, asset.assetId]));
-      updateMeshNode(id, {
-        activeJobId: null,
-        outputAssetId: artifactAssetIds.glb ?? null,
-        thumbnailAssetId: artifactAssetIds.thumbnail ?? null,
-        artifactAssetIds,
-        inputsChangedSinceLastRun: false,
-        runStatus: null,
-        errorMessage: null,
-      });
-      markNodeDirty(id);
-      showSuccessToast(toastId, {
-        title: "Mesh complete",
-        description: artifactAssetIds.glb ? "3D files are ready to inspect." : "Artifacts are ready.",
-      });
-    },
-    onError: (error, _variables, toastId) => {
-      updateMeshNode(id, {
-        activeJobId: null,
-        runStatus: "FAILED",
-        errorMessage: getErrorMessage(error, "Mesh run failed."),
-      });
-      showErrorToast(toastId, {
-        title: "Mesh failed",
-        description: getErrorMessage(error, "Mesh run failed."),
-      });
-    },
+    onError: (error, _variables, toastId) => { updateMeshNode(id, { errorMessage: getErrorMessage(error, "Mesh failed") }); showErrorToast(toastId, { title: "Mesh failed", description: getErrorMessage(error, "Mesh failed") }); },
   });
+  const busy = runMutation.isPending || !!data.activeJobId;
 
-  const runDisabled = runMutation.isPending || sourceImages.length === 0;
+  const runDisabled = busy || sourceImages.length === 0;
 
   if (data.collapsed) {
     return (
@@ -191,10 +86,10 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
               no mesh
             </div>
           )}
-          {runMutation.isPending ? (
+          {busy ? (
             <div className="pointer-events-none absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.28)_0_8px,transparent_8px_16px)] p-2">
               <span className="inline-block self-start border-[2px] border-black bg-[#3e8cff] px-2 py-[2px] font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white">
-                {data.runStatus ?? "Running"}
+                {query.data?.result?.status ?? data.runStatus ?? "Running"}
               </span>
             </div>
           ) : null}
@@ -224,6 +119,7 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
         id="image-in"
         position={Position.Left}
       />
+      <MeshParameters data={data} update={(patch) => updateMeshNode(id, { ...patch, inputsChangedSinceLastRun: true })} />
       <div className="space-y-1.5">
         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-black/55">Mode</div>
         <div className="flex gap-1.5">
@@ -263,10 +159,10 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
             Mesh preview
           </div>
         )}
-        {runMutation.isPending ? (
+        {busy ? (
           <div className="pointer-events-none absolute inset-0 flex items-end bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.28)_0_8px,transparent_8px_16px)] p-2">
             <span className="inline-block self-start border-[2px] border-black bg-[#3e8cff] px-2 py-[2px] font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white">
-              {data.runStatus ?? "Running"}
+              {query.data?.result?.status ?? data.runStatus ?? "Running"}
             </span>
           </div>
         ) : null}
@@ -308,9 +204,9 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
         disabled={runDisabled}
         className="flex h-11 w-full items-center justify-between gap-3 border-[3px] border-black bg-[#3e8cff] px-3 text-[12px] font-black uppercase tracking-[0.16em] text-white shadow-[4px_4px_0_0_#0a0a0a] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_0_#0a0a0a] disabled:cursor-not-allowed disabled:bg-[#c7d1e2] disabled:text-white/60 disabled:shadow-none"
       >
-        <span>{runMutation.isPending ? "Running…" : data.outputAssetId ? "Re-run" : "Run"}</span>
+        <span>{busy ? "Running…" : data.outputAssetId ? "Re-run" : "Run"}</span>
         <span className="font-mono text-[10px] font-medium text-white/80">
-          {data.mode === "refine" ? "~1m · refine" : "~30s · preview"}
+          {estimateNodeCost({ type: "mesh", data }).label}
         </span>
       </button>
 
@@ -332,6 +228,7 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
         </div>
       ) : null}
 
+      {data.outputAssetIds.length > 0 && <details className="nodrag text-xs"><summary>History · {data.outputAssetIds.length} files</summary>{data.outputAssetIds.map((a, i) => <a key={`${a}-${i}`} href={getAssetUrl(a)} download className="block">Output {i + 1}</a>)}</details>}
       {data.errorMessage ? (
         <p className="font-mono text-[11px] text-[#d8421b]">{data.errorMessage}</p>
       ) : null}
@@ -343,4 +240,21 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
       />
     </NodeChrome>
   );
+}
+
+function MeshParameters({ data, update }: { data: MeshGraphNode["data"]; update: (patch: Partial<MeshGraphNode["data"]>) => void }) {
+  const tripo = data.provider.startsWith("tripo");
+  const p2 = data.provider === "tripo-p2";
+  const field = (key: keyof MeshGraphNode["data"], label: string, options?: readonly string[]) => <label key={key} className="block text-xs font-bold">{label}{options ? <select className="nodrag block w-full border-2 border-black" value={String(data[key] ?? "")} onChange={(e) => update({ [key]: e.target.value || undefined })}>{options.map((v) => <option key={v} value={v}>{v}</option>)}</select> : typeof data[key] === "boolean" ? <input className="nodrag ml-2" type="checkbox" checked={Boolean(data[key])} onChange={(e) => update({ [key]: e.target.checked })} /> : <input className="nodrag block w-full border-2 border-black" type="number" value={Number(data[key] ?? 0)} onChange={(e) => update({ [key]: Number(e.target.value) })} />}</label>;
+  return <div className="space-y-2">
+    {field("provider", "Engine", ["meshy", "hunyuan", "tripo-p2", "tripo-h31"])}
+    {tripo ? <>
+      {field("tripoFaceLimit", "Target faces")}{field("tripoQuad", "Quad topology (may return FBX)")}
+      {field("tripoTexture", "Textures")}{field("tripoPbr", "PBR (also enables textures)")}
+      {field("tripoTextureQuality", "Texture quality", p2 ? ["fast", "standard", "detailed", "extreme"] : ["standard", "detailed"])}
+      {field("tripoAutoSize", "Real-world scale")}
+      {p2 ? <>{field("tripoTextureVersion", "Texture version", ["v3.5-20260815", "v3.0-20250812", "v2.5-20250123"])}{field("tripoExportUv", "Export UVs")}{field("tripoDelight", "Remove baked lighting")}{field("tripoExportOrientation", "Forward axis", ["", "+x", "-x", "+y", "-y"])}</> : <>{field("tripoMultiview", "Multi-view input (front / left / back / right)")}{field("tripoGeometryQuality", "Geometry quality", ["standard", "detailed"])}{field("tripoTextureAlignment", "Texture alignment", ["original_image", "geometry"])}{field("tripoOrientation", "Orientation", ["default", "align_image"])}</>}
+      <details className="nodrag"><summary className="text-xs">Seeds (optional)</summary>{field("tripoModelSeed", "Geometry seed")}{field("tripoTextureSeed", "Texture seed")}</details>
+    </> : data.provider === "meshy" ? <>{field("meshyUseMultiview", "Multi-image")}{field("meshyTargetPolycount", "Target polygons")}{field("meshyTopology", "Topology", ["triangle", "quad"])}{field("meshyPolyMode", "Poly mode", ["standard", "low"])}{field("meshyShouldTexture", "Textures")}{field("meshyEnablePbr", "PBR")}</> : <>{field("hunyuanFaceCount", "Face count")}{field("hunyuanEnablePbr", "PBR")}{field("hunyuanGenerateType", "Generation", ["Normal", "LowPoly", "Geometry"])}</>}
+  </div>;
 }

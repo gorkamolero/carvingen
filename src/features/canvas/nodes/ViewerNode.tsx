@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatedModelViewer } from "./AnimatedModelViewer";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useSnapshot } from "valtio";
 
@@ -35,16 +36,7 @@ export function ViewerNode({ id, data }: NodeProps<ViewerGraphNode>) {
         />
         <div className="nodrag nopan nowheel aspect-square w-full overflow-hidden border-[3px] border-black bg-[#f9f5e8]">
           {glbAssetId ? (
-            <model-viewer
-              src={getAssetUrl(glbAssetId)}
-              camera-controls
-              auto-rotate={data.autoRotate ? "" : undefined}
-              exposure={String(data.exposure)}
-              environment-image="neutral"
-              shadow-intensity="1"
-              class="nodrag nopan nowheel"
-              style={{ width: "100%", height: "100%", background: "#fafaf5" }}
-            />
+            <AnimatedModelViewer key={glbAssetId} src={getAssetUrl(glbAssetId)} autoRotate={data.autoRotate} exposure={data.exposure} />
           ) : (
             <div className="flex h-full items-center justify-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
               no glb
@@ -76,16 +68,7 @@ export function ViewerNode({ id, data }: NodeProps<ViewerGraphNode>) {
         className="nodrag nopan nowheel aspect-square overflow-hidden border-[3px] border-black bg-[#f9f5e8]"
       >
         {glbAssetId ? (
-          <model-viewer
-            src={getAssetUrl(glbAssetId)}
-            camera-controls
-            auto-rotate={data.autoRotate ? "" : undefined}
-            exposure={String(data.exposure)}
-            environment-image="neutral"
-            shadow-intensity="1"
-            class="nodrag nopan nowheel"
-            style={{ width: "100%", height: "100%", background: "#fafaf5" }}
-          />
+          <AnimatedModelViewer key={glbAssetId} src={getAssetUrl(glbAssetId)} autoRotate={data.autoRotate} exposure={data.exposure} />
         ) : (
           <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,transparent_49%,rgba(0,0,0,0.08)_49%_51%,transparent_51%)] bg-[length:14px_14px] text-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-black/45">
             Connect a GLB

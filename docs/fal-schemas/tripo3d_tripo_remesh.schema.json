@@ -1,0 +1,449 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Queue OpenAPI for tripo3d/tripo/remesh",
+    "version": "1.0.0",
+    "description": "The OpenAPI schema for the tripo3d/tripo/remesh queue.",
+    "x-fal-metadata": {
+      "endpointId": "tripo3d/tripo/remesh",
+      "category": "3d-to-3d",
+      "thumbnailUrl": "https://v3b.fal.media/files/b/0aa54846/p3ydtPbP_CPp-9oWvXwzk.jpg",
+      "playgroundUrl": "https://fal.ai/models/tripo3d/tripo/remesh",
+      "documentationUrl": "https://fal.ai/models/tripo3d/tripo/remesh/api",
+      "about": "Remesh"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Fal Key"
+      }
+    },
+    "schemas": {
+      "QueueStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_QUEUE",
+              "IN_PROGRESS",
+              "COMPLETED"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "description": "The request id."
+          },
+          "response_url": {
+            "type": "string",
+            "description": "The response url."
+          },
+          "status_url": {
+            "type": "string",
+            "description": "The status url."
+          },
+          "cancel_url": {
+            "type": "string",
+            "description": "The cancel url."
+          },
+          "logs": {
+            "type": "object",
+            "description": "The logs.",
+            "additionalProperties": true
+          },
+          "metrics": {
+            "type": "object",
+            "description": "The metrics.",
+            "additionalProperties": true
+          },
+          "queue_position": {
+            "type": "integer",
+            "description": "The queue position."
+          }
+        },
+        "required": [
+          "status",
+          "request_id"
+        ]
+      },
+      "TripoRemeshInput": {
+        "title": "RemeshInput",
+        "description": "Input for the Smart low poly / remesh (``highpoly_to_lowpoly``) task.\n\nRetopologises a high-poly 3D model into a clean, lower-poly mesh. The input\nmodel is imported into Tripo first (``import_model``), then remeshed.",
+        "required": [
+          "mesh_url"
+        ],
+        "x-fal-order-properties": [
+          "mesh_url",
+          "quad",
+          "face_limit",
+          "bake",
+          "part_names"
+        ],
+        "type": "object",
+        "properties": {
+          "mesh_url": {
+            "title": "Mesh URL",
+            "examples": [
+              "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"
+            ],
+            "description": "URL of the input 3D model to remesh. Supported formats: GLB, OBJ, FBX, STL (max 150MB).",
+            "type": "string"
+          },
+          "face_limit": {
+            "title": "Face Limit",
+            "description": "Target face count of the remeshed model. Range 500-20000 (500-10000 when 'quad' is true). If unset, the model determines the count adaptively.",
+            "anyOf": [
+              {
+                "minimum": 500,
+                "type": "integer",
+                "maximum": 20000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quad": {
+            "title": "Quad",
+            "default": false,
+            "description": "Generate quad (4-sided) mesh topology instead of triangles. Forces FBX output. When enabled and 'face_limit' is unset, 'face_limit' defaults to 10000.",
+            "type": "boolean"
+          },
+          "part_names": {
+            "title": "Part Names",
+            "description": "Optional list of part names (as returned by a prior mesh segmentation) to preserve as separate parts while remeshing.",
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bake": {
+            "title": "Bake",
+            "default": true,
+            "description": "Bake textures onto the remeshed model during generation.",
+            "type": "boolean"
+          }
+        }
+      },
+      "TripoRemeshOutput": {
+        "title": "Tripo3DOutput",
+        "description": "Output for Tripo3D generation",
+        "required": [
+          "model_mesh",
+          "model_urls"
+        ],
+        "x-fal-order-properties": [
+          "model_mesh",
+          "model_urls",
+          "rendered_image",
+          "task_id"
+        ],
+        "type": "object",
+        "properties": {
+          "rendered_image": {
+            "description": "Preview render of the generated 3D model.",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "task_id": {
+            "title": "Task Id",
+            "description": "Tripo task ID for a generated model. Pass this to rig or rig-check to use the model without uploading it again.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model_mesh": {
+            "description": "Generated 3D model file. May be GLB or FBX depending on Tripo output.",
+            "$ref": "#/components/schemas/File"
+          },
+          "model_urls": {
+            "description": "URLs for different 3D model variants.",
+            "title": "Model URLs",
+            "$ref": "#/components/schemas/ModelUrls"
+          }
+        }
+      },
+      "File": {
+        "x-fal-order-properties": [
+          "url",
+          "content_type",
+          "file_name",
+          "file_size"
+        ],
+        "required": [
+          "url"
+        ],
+        "title": "File",
+        "type": "object",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "description": "The URL where the file can be downloaded from.",
+            "type": "string"
+          },
+          "file_name": {
+            "examples": [
+              "z9RV14K95DvU.png"
+            ],
+            "title": "File Name",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The name of the file. It will be auto-generated if not provided."
+          },
+          "file_size": {
+            "examples": [
+              4404019
+            ],
+            "title": "File Size",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The size of the file in bytes."
+          },
+          "content_type": {
+            "examples": [
+              "image/png"
+            ],
+            "title": "Content Type",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The mime type of the file."
+          }
+        }
+      },
+      "ModelUrls": {
+        "title": "ModelUrls",
+        "description": "3D model download URLs",
+        "x-fal-order-properties": [
+          "glb",
+          "fbx",
+          "base_model",
+          "pbr_model"
+        ],
+        "type": "object",
+        "properties": {
+          "base_model": {
+            "description": "Base (untextured) model",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pbr_model": {
+            "title": "PBR Model",
+            "description": "PBR-textured model",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "glb": {
+            "title": "GLB",
+            "description": "GLB format 3D model",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fbx": {
+            "title": "FBX",
+            "description": "FBX format 3D model",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/tripo3d/tripo/remesh/requests/{request_id}/status": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          },
+          {
+            "name": "logs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "description": "Whether to include logs (`1`) in the response or not (`0`)."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/tripo/remesh/requests/{request_id}/cancel": {
+      "put": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the request was cancelled successfully."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/tripo/remesh": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripoRemeshInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/tripo/remesh/requests/{request_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Result of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripoRemeshOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://queue.fal.run"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}

@@ -1,0 +1,517 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Queue OpenAPI for fal-ai/meshy/rigging/multi-animation",
+    "version": "1.0.0",
+    "description": "The OpenAPI schema for the fal-ai/meshy/rigging/multi-animation queue.",
+    "x-fal-metadata": {
+      "endpointId": "fal-ai/meshy/rigging/multi-animation",
+      "category": "3d-to-3d",
+      "thumbnailUrl": "https://v3b.fal.media/files/b/0a9e0bf5/ZWAyCMj3wyAm8pM8Fr3Rz_9a891ce4df144559a8d9b169cca63531.jpg",
+      "playgroundUrl": "https://fal.ai/models/fal-ai/meshy/rigging/multi-animation",
+      "documentationUrl": "https://fal.ai/models/fal-ai/meshy/rigging/multi-animation/api",
+      "about": "Auto-rig a 3D humanoid model and generate multiple animation clips.\n\nLike /rigging, but dedicated to producing several animation clips from\na single rig in one request. Each preset ID in ``animation_action_ids``\nbecomes an independent Meshy animation task (run concurrently against\nthe shared rig) and is returned as a separate entry in the\n``animations`` output array, in request order.\n\nAccepts any publicly accessible GLB URL \u2014 works with models generated\nby Hunyuan, Trellis, Meshy, or any other 3D generation tool.\n\nFeatures:\n- Automatic humanoid rigging with skeleton\n- Multiple animation presets applied to one rig in a single call\n- Output in both GLB and FBX formats per clip"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Fal Key"
+      }
+    },
+    "schemas": {
+      "QueueStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_QUEUE",
+              "IN_PROGRESS",
+              "COMPLETED"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "description": "The request id."
+          },
+          "response_url": {
+            "type": "string",
+            "description": "The response url."
+          },
+          "status_url": {
+            "type": "string",
+            "description": "The status url."
+          },
+          "cancel_url": {
+            "type": "string",
+            "description": "The cancel url."
+          },
+          "logs": {
+            "type": "object",
+            "description": "The logs.",
+            "additionalProperties": true
+          },
+          "metrics": {
+            "type": "object",
+            "description": "The metrics.",
+            "additionalProperties": true
+          },
+          "queue_position": {
+            "type": "integer",
+            "description": "The queue position."
+          }
+        },
+        "required": [
+          "status",
+          "request_id"
+        ]
+      },
+      "MeshyRiggingMultiAnimationInput": {
+        "title": "MultiAnimationInput",
+        "x-fal-order-properties": [
+          "model_url",
+          "height_meters",
+          "animation_action_ids",
+          "enable_safety_checker"
+        ],
+        "required": [
+          "model_url",
+          "animation_action_ids"
+        ],
+        "description": "Input for the standalone multi-clip animation endpoint.\n\nAuto-rigs a humanoid GLB model and generates multiple animation clips\nagainst that single rig \u2014 one clip per ID in ``animation_action_ids``.\nUnlike the per-generator endpoints (which apply a single optional\nanimation), this endpoint is dedicated to producing several clips at once.",
+        "type": "object",
+        "properties": {
+          "enable_safety_checker": {
+            "title": "Enable Safety Checker",
+            "description": "If set to true, input data will be checked for safety before processing.",
+            "default": true,
+            "type": "boolean"
+          },
+          "height_meters": {
+            "title": "Height Meters",
+            "exclusiveMinimum": 0,
+            "description": "Approximate height of the character in meters.",
+            "default": 1.7,
+            "type": "number"
+          },
+          "animation_action_ids": {
+            "examples": [
+              [
+                36,
+                92
+              ]
+            ],
+            "description": "Animation preset IDs from Meshy's library. One animation clip is generated per ID against the same rig and returned in the 'animations' output array, in request order. Must contain at least one ID. Each ID must be in [0, 696], at most 10 distinct clips may be requested, and duplicate IDs are de-duplicated. See https://docs.meshy.ai/en/api/animation-library for available IDs.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Animation Action Ids"
+          },
+          "model_url": {
+            "examples": [
+              "https://storage.googleapis.com/falserverless/model_tests/video_models/base_basic_shaded.glb"
+            ],
+            "description": "URL of a 3D model in GLB format to rig and animate. Can be any publicly accessible URL \u2014 works with models generated by Hunyuan, Trellis, Meshy, or any other 3D generation tool. The model must be a humanoid character with clearly defined limbs.",
+            "minLength": 1,
+            "type": "string",
+            "title": "Model Url"
+          }
+        }
+      },
+      "MeshyRiggingMultiAnimationOutput": {
+        "properties": {
+          "rigged_character_fbx": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rigged character in FBX format."
+          },
+          "rigged_character_glb": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rigged character in GLB format."
+          },
+          "rig_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Meshy rigging task ID.",
+            "title": "Rig Task Id"
+          },
+          "animations": {
+            "description": "Animation clips generated against the rig \u2014 one entry per requested animation action ID, in request order.",
+            "items": {
+              "$ref": "#/components/schemas/AnimationClip"
+            },
+            "type": "array",
+            "title": "Animations"
+          },
+          "basic_animations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BasicAnimations"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Basic walking and running animations included with rigging."
+          }
+        },
+        "title": "MultiAnimationOutput",
+        "description": "Output for the standalone multi-clip animation endpoint.",
+        "x-fal-order-properties": [
+          "rigged_character_glb",
+          "rigged_character_fbx",
+          "basic_animations",
+          "animations",
+          "rig_task_id"
+        ],
+        "type": "object"
+      },
+      "File": {
+        "title": "File",
+        "x-fal-order-properties": [
+          "url",
+          "content_type",
+          "file_name",
+          "file_size"
+        ],
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "file_size": {
+            "examples": [
+              4404019
+            ],
+            "description": "The size of the file in bytes.",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size"
+          },
+          "url": {
+            "description": "The URL where the file can be downloaded from.",
+            "type": "string",
+            "title": "Url"
+          },
+          "content_type": {
+            "examples": [
+              "image/png"
+            ],
+            "description": "The mime type of the file.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type"
+          },
+          "file_name": {
+            "examples": [
+              "z9RV14K95DvU.png"
+            ],
+            "description": "The name of the file. It will be auto-generated if not provided.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          }
+        }
+      },
+      "AnimationClip": {
+        "title": "AnimationClip",
+        "x-fal-order-properties": [
+          "action_id",
+          "animation_glb",
+          "animation_fbx"
+        ],
+        "required": [
+          "action_id"
+        ],
+        "description": "A single animation clip generated against a rigged character.",
+        "type": "object",
+        "properties": {
+          "action_id": {
+            "description": "The Meshy animation preset action ID applied to this clip.",
+            "type": "integer",
+            "title": "Action Id"
+          },
+          "animation_fbx": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Animated 3D model in FBX format for this clip."
+          },
+          "animation_glb": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Animated 3D model in GLB format for this clip."
+          }
+        }
+      },
+      "BasicAnimations": {
+        "properties": {
+          "running_armature_glb": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Running armature only in GLB format"
+          },
+          "walking_fbx": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Walking animation in FBX format"
+          },
+          "running_glb": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Running animation in GLB format"
+          },
+          "walking_glb": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Walking animation in GLB format"
+          },
+          "walking_armature_glb": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Walking armature only in GLB format"
+          },
+          "running_fbx": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Running animation in FBX format"
+          }
+        },
+        "title": "BasicAnimations",
+        "description": "Basic animation files included with the rigging result",
+        "x-fal-order-properties": [
+          "walking_glb",
+          "walking_fbx",
+          "walking_armature_glb",
+          "running_glb",
+          "running_fbx",
+          "running_armature_glb"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "paths": {
+    "/fal-ai/meshy/rigging/multi-animation/requests/{request_id}/status": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          },
+          {
+            "name": "logs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "description": "Whether to include logs (`1`) in the response or not (`0`)."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fal-ai/meshy/rigging/multi-animation/requests/{request_id}/cancel": {
+      "put": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the request was cancelled successfully."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fal-ai/meshy/rigging/multi-animation": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeshyRiggingMultiAnimationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fal-ai/meshy/rigging/multi-animation/requests/{request_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Result of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeshyRiggingMultiAnimationOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://queue.fal.run"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}

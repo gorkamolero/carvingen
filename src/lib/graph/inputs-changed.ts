@@ -23,7 +23,7 @@ export function markDownstreamInputsChanged(
       return node;
     }
 
-    if (node.type === "prompt" || node.type === "mesh" || node.type === "vision" || node.type === "video") {
+    if ("inputsChangedSinceLastRun" in node.data) {
       return {
         ...node,
         data: {

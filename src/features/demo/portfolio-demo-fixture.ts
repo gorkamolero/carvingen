@@ -1,3 +1,4 @@
+import { createMeshNodeData } from "@/lib/graph/types";
 import type { ProjectGraph } from "@/lib/graph/types";
 
 function svgDataUrl(svg: string) {
@@ -94,6 +95,7 @@ export const portfolioDemoGraph = {
       type: "mesh",
       position: { x: 800, y: 34 },
       data: {
+        ...createMeshNodeData(),
         mode: "preview",
         provider: "meshy",
         meshyUseMultiview: false,

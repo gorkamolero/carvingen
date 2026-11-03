@@ -1,0 +1,12 @@
+{
+  "prices": [
+    {
+      "endpoint_id": "fal-ai/nano-banana-2",
+      "unit_price": 0.08,
+      "unit": "images",
+      "currency": "USD"
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

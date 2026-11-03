@@ -1,0 +1,524 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Queue OpenAPI for tripo3d/h3.1/image-to-3d",
+    "version": "1.0.0",
+    "description": "The OpenAPI schema for the tripo3d/h3.1/image-to-3d queue.",
+    "x-fal-metadata": {
+      "endpointId": "tripo3d/h3.1/image-to-3d",
+      "category": "image-to-3d",
+      "thumbnailUrl": "https://v3b.fal.media/files/b/0a95559a/DXp1uAfHvZsXt-GJ9-Bp-_47060336be0749d5bd751ca6359cd2f9.jpg",
+      "playgroundUrl": "https://fal.ai/models/tripo3d/h3.1/image-to-3d",
+      "documentationUrl": "https://fal.ai/models/tripo3d/h3.1/image-to-3d/api",
+      "about": "H31 Image To 3D"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Fal Key"
+      }
+    },
+    "schemas": {
+      "QueueStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_QUEUE",
+              "IN_PROGRESS",
+              "COMPLETED"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "description": "The request id."
+          },
+          "response_url": {
+            "type": "string",
+            "description": "The response url."
+          },
+          "status_url": {
+            "type": "string",
+            "description": "The status url."
+          },
+          "cancel_url": {
+            "type": "string",
+            "description": "The cancel url."
+          },
+          "logs": {
+            "type": "object",
+            "description": "The logs.",
+            "additionalProperties": true
+          },
+          "metrics": {
+            "type": "object",
+            "description": "The metrics.",
+            "additionalProperties": true
+          },
+          "queue_position": {
+            "type": "integer",
+            "description": "The queue position."
+          }
+        },
+        "required": [
+          "status",
+          "request_id"
+        ]
+      },
+      "H31ImageTo3dInput": {
+        "title": "FullImageTo3DInput",
+        "description": "Input for Image to 3D generation using full-featured models (H3.1, v2.5).",
+        "required": [
+          "image_url"
+        ],
+        "x-fal-order-properties": [
+          "image_url",
+          "face_limit",
+          "texture",
+          "pbr",
+          "model_seed",
+          "texture_seed",
+          "texture_quality",
+          "geometry_quality",
+          "texture_alignment",
+          "auto_size",
+          "orientation",
+          "quad",
+          "enable_safety_checker"
+        ],
+        "type": "object",
+        "properties": {
+          "model_seed": {
+            "title": "Model Seed",
+            "description": "Seed for geometry generation reproducibility.",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "texture_alignment": {
+            "title": "Texture Alignment",
+            "default": "original_image",
+            "description": "How textures are aligned. 'original_image' aligns to input image, 'geometry' aligns to generated geometry.",
+            "type": "string",
+            "enum": [
+              "original_image",
+              "geometry"
+            ]
+          },
+          "orientation": {
+            "title": "Orientation",
+            "default": "default",
+            "description": "Model orientation. 'align_image' auto-rotates to match the input image.",
+            "type": "string",
+            "enum": [
+              "default",
+              "align_image"
+            ]
+          },
+          "texture_seed": {
+            "title": "Texture Seed",
+            "description": "Seed for texture generation reproducibility.",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "texture": {
+            "title": "Texture",
+            "default": true,
+            "description": "Whether to generate textures for the model.",
+            "type": "boolean"
+          },
+          "geometry_quality": {
+            "title": "Geometry Quality",
+            "default": "standard",
+            "description": "Quality level for geometry.",
+            "type": "string",
+            "enum": [
+              "standard",
+              "detailed"
+            ]
+          },
+          "face_limit": {
+            "title": "Face Limit",
+            "description": "Target number of faces for the generated mesh. If not set, the model adaptively determines the count.",
+            "anyOf": [
+              {
+                "minimum": 1000,
+                "type": "integer",
+                "maximum": 2000000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "auto_size": {
+            "title": "Auto Size",
+            "default": false,
+            "description": "Auto-scale the model to real-world dimensions (meters).",
+            "type": "boolean"
+          },
+          "texture_quality": {
+            "title": "Texture Quality",
+            "default": "standard",
+            "description": "Quality level for textures. 'detailed' produces higher-resolution textures.",
+            "type": "string",
+            "enum": [
+              "standard",
+              "detailed"
+            ]
+          },
+          "quad": {
+            "title": "Quad",
+            "default": false,
+            "description": "Generate quad (4-sided) mesh topology instead of triangles. When Tripo emits FBX bytes for quad output, the returned model file is FBX.",
+            "type": "boolean"
+          },
+          "pbr": {
+            "title": "Pbr",
+            "default": true,
+            "description": "Whether to generate PBR (Physically Based Rendering) materials. If true, texture is also enabled.",
+            "type": "boolean"
+          },
+          "image_url": {
+            "title": "Image Url",
+            "examples": [
+              "https://v3b.fal.media/files/b/zebra/3osHJDI8IZ2wl6sGtEUeB_image.png"
+            ],
+            "description": "URL of the input image for 3D model creation.",
+            "type": "string"
+          },
+          "enable_safety_checker": {
+            "title": "Enable Safety Checker",
+            "default": true,
+            "description": "Authorized callers may set false to request relaxed screening.",
+            "type": "boolean"
+          }
+        }
+      },
+      "H31ImageTo3dOutput": {
+        "title": "Tripo3DOutput",
+        "description": "Output for Tripo3D generation",
+        "required": [
+          "model_mesh",
+          "model_urls"
+        ],
+        "x-fal-order-properties": [
+          "model_mesh",
+          "model_urls",
+          "rendered_image",
+          "task_id"
+        ],
+        "type": "object",
+        "properties": {
+          "rendered_image": {
+            "description": "Preview render of the generated 3D model.",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "task_id": {
+            "title": "Task Id",
+            "description": "Tripo task ID for a generated model. Pass this to rig or rig-check to use the model without uploading it again.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model_mesh": {
+            "description": "Generated 3D model file. May be GLB or FBX depending on Tripo output.",
+            "$ref": "#/components/schemas/File"
+          },
+          "model_urls": {
+            "description": "URLs for different 3D model variants.",
+            "title": "Model URLs",
+            "$ref": "#/components/schemas/ModelUrls"
+          }
+        }
+      },
+      "File": {
+        "title": "File",
+        "required": [
+          "url"
+        ],
+        "x-fal-order-properties": [
+          "url",
+          "content_type",
+          "file_name",
+          "file_size"
+        ],
+        "type": "object",
+        "properties": {
+          "file_name": {
+            "title": "File Name",
+            "examples": [
+              "z9RV14K95DvU.png"
+            ],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The name of the file. It will be auto-generated if not provided."
+          },
+          "url": {
+            "title": "Url",
+            "description": "The URL where the file can be downloaded from.",
+            "type": "string"
+          },
+          "file_size": {
+            "title": "File Size",
+            "examples": [
+              4404019
+            ],
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The size of the file in bytes."
+          },
+          "content_type": {
+            "title": "Content Type",
+            "examples": [
+              "image/png"
+            ],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The mime type of the file."
+          }
+        }
+      },
+      "ModelUrls": {
+        "title": "ModelUrls",
+        "description": "3D model download URLs",
+        "x-fal-order-properties": [
+          "glb",
+          "fbx",
+          "base_model",
+          "pbr_model"
+        ],
+        "type": "object",
+        "properties": {
+          "base_model": {
+            "description": "Base (untextured) model",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pbr_model": {
+            "title": "PBR Model",
+            "description": "PBR-textured model",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "glb": {
+            "title": "GLB",
+            "description": "GLB format 3D model",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fbx": {
+            "title": "FBX",
+            "description": "FBX format 3D model",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/File"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/tripo3d/h3.1/image-to-3d/requests/{request_id}/status": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          },
+          {
+            "name": "logs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "description": "Whether to include logs (`1`) in the response or not (`0`)."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/h3.1/image-to-3d/requests/{request_id}/cancel": {
+      "put": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the request was cancelled successfully."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/h3.1/image-to-3d": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/H31ImageTo3dInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tripo3d/h3.1/image-to-3d/requests/{request_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Result of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/H31ImageTo3dOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://queue.fal.run"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { CHARACTER_ENDPOINTS } from "@/lib/character/fal";
 import { createRouteHandler } from "@fal-ai/server-proxy/nextjs";
 
 import {
@@ -22,6 +23,7 @@ const VIDEO_ENDPOINTS = [
 const IMAGE_ENDPOINTS = IMAGE_MODEL_BASES.flatMap((model) => [model, `${model}/edit`]);
 
 export const FAL_ALLOWED_ENDPOINTS = [
+  ...Object.values(CHARACTER_ENDPOINTS),
   ...IMAGE_ENDPOINTS,
   ...Object.values(MESH_MODEL_SLUGS),
   MESHY_MULTI_IMAGE_SLUG,

@@ -1,0 +1,12 @@
+{
+  "prices": [
+    {
+      "endpoint_id": "tripo3d/h3.1/image-to-3d",
+      "unit_price": 0.01,
+      "unit": "credits",
+      "currency": "USD"
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

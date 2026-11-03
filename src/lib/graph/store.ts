@@ -4,7 +4,8 @@ import { addEdge, applyEdgeChanges, applyNodeChanges, type Connection, type Edge
 import { nanoid } from "nanoid";
 import { proxyWithHistory } from "valtio-history";
 
-import { canConnect, getHandleKind } from "@/lib/graph/connections";
+import { createPipelineData, PIPELINE_KINDS, type PipelineData } from "@/lib/character/schema";
+import { canConnectNodes, getHandleKind } from "@/lib/graph/connections";
 import { markDownstreamInputsChanged } from "@/lib/graph/inputs-changed";
 import {
   createVideoNodeData,
@@ -84,6 +85,7 @@ export function markSaved() {
 }
 
 function createNode(nodeType: CarvingNode["type"], position: { x: number; y: number }) {
+  if (PIPELINE_KINDS.some((kind) => kind === nodeType)) return { id: nanoid(), type: nodeType, position, data: createPipelineData() } as CarvingNode;
   if (nodeType === "video") {
     return { id: nanoid(), type: "video", position, data: createVideoNodeData() } as CarvingNode;
   }
@@ -144,7 +146,9 @@ export function commitGraphInteraction() {
 }
 
 export function connectNodes(connection: Connection) {
-  if (!canConnect(connection) || !connection.source || !connection.target) {
+  const sourceType = graphHistory.value.nodes.find((n) => n.id === connection.source)?.type;
+  const targetType = graphHistory.value.nodes.find((n) => n.id === connection.target)?.type;
+  if (!sourceType || !targetType || !canConnectNodes(connection, sourceType, targetType)) {
     return false;
   }
 
@@ -253,5 +257,10 @@ export function updateVideoNode(nodeId: string, patch: Partial<VideoNodeData>) {
       ? { ...node, data: { ...node.data, ...patch } }
       : node,
   ) as CarvingNode[];
+  bumpRevision();
+}
+
+export function updatePipelineNode(nodeId: string, patch: Partial<PipelineData>) {
+  graphHistory.value.nodes = graphHistory.value.nodes.map((node) => node.id === nodeId ? { ...node, data: { ...node.data, ...patch } } : node) as CarvingNode[];
   bumpRevision();
 }
