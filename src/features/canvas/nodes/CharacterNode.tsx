@@ -3,7 +3,7 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSnapshot } from "valtio";
+import { useSnapshot, snapshot } from "valtio";
 import { NodeChrome } from "./NodeChrome";
 import { graphHistory, updatePipelineNode, markNodeDirty } from "@/lib/graph/store";
 import type { PipelineNode, CarvingNode, CarvingEdge } from "@/lib/graph/types";
@@ -30,14 +30,17 @@ export function CharacterNode({ id, type, data }: NodeProps<PipelineNode>) {
   async function run() {
     setSubmitting(true);
     try {
-      if (!graph.activeProjectId) throw new Error("No active project");
-      const job = await submitCharacterJob(type, { projectId: graph.activeProjectId, nodeId: id, data, ...input });
+      // Read the live graph at click time: a render-time snapshot can predate an upstream rerun.
+      const live = snapshot(graphHistory.value);
+      if (!live.activeProjectId) throw new Error("No active project");
+      const liveInput = characterInputs({ id, type, data, position: { x: 0, y: 0 } } as PipelineNode, live.nodes as unknown as CarvingNode[], live.edges as unknown as CarvingEdge[]);
+      const job = await submitCharacterJob(type, { projectId: live.activeProjectId, nodeId: id, data, ...liveInput });
       patch({ activeJobId: job.jobId, errorMessage: null, runStatus: "Queued" });
     } catch (e) { patch({ errorMessage: e instanceof Error ? e.message : "Run failed" }); }
     finally { setSubmitting(false); }
   }
   const field = (key: keyof PipelineData, label: string, options?: readonly (string | number)[]) => <label className="block text-xs font-bold" key={key}>{label}
-    {options ? <select className="nodrag block w-full border-2 border-black p-1" value={String(data[key])} onChange={(e) => patch({ [key]: typeof data[key] === "number" ? Number(e.target.value) : e.target.value })}>{options.map((v) => <option key={v}>{v}</option>)}</select>
+    {options ? <select className="nodrag block w-full border-2 border-black p-1" value={String(data[key] ?? options[0])} onChange={(e) => patch({ [key]: typeof data[key] === "number" || typeof options[0] === "number" ? Number(e.target.value) : e.target.value })}>{options.map((v) => <option key={v}>{v}</option>)}</select>
       : typeof data[key] === "boolean" ? <input className="nodrag ml-2" type="checkbox" checked={Boolean(data[key])} onChange={(e) => patch({ [key]: e.target.checked })} />
         : <input className="nodrag block w-full border-2 border-black p-1" type={typeof data[key] === "number" ? "number" : "text"} value={String(data[key] ?? "")} onChange={(e) => patch({ [key]: typeof data[key] === "number" ? Number(e.target.value) : e.target.value })} />}
   </label>;
@@ -54,7 +57,7 @@ export function CharacterNode({ id, type, data }: NodeProps<PipelineNode>) {
         catch (error) { patch({ errorMessage: error instanceof Error ? error.message : "Upload failed" }); }
       }} />{data.fileName}</label> : null}
       {type === "multiview" && <>{field("includeBack", "Include back view")}{field("equipment", "Equipment cutouts (comma separated)")}</>}
-      {type === "bake" && <>{field("engine", "Engine", ["blender", "tripo"])}{field("targetTriangles", data.engine === "tripo" ? "Target faces (500–20000; quads ≤10000)" : "Target triangles")}{data.engine === "blender" ? <>{field("keepUvs", "Keep UVs")}{field("textureSize", "Texture size", [1024, 2048, 4096])}</> : field("quad", "Quad topology")}</>}
+      {type === "bake" && <>{field("engine", "Engine", ["blender", "tripo"])}{field("targetTriangles", data.engine === "tripo" ? "Target faces (500–20000; quads ≤10000)" : "Target triangles")}{data.engine === "blender" ? <>{field("keepUvs", "Keep UVs")}{field("textureSize", "Texture size", [1024, 2048, 4096])}{field("turnDegrees", "Turn (degrees, so the model faces front)", [0, 90, 180, 270])}</> : field("quad", "Quad topology")}</>}
       {(type === "rig" || type === "animate") && field("heightMeters", "Character height (metres)")}
       {type === "animate" && <div className="space-y-1 text-xs"><p>Preset slots · fal rigs the input again</p>{data.presetIds.map((preset, i) => <div className="flex gap-1" key={i}><select aria-label={`Preset ${i + 1}`} className="nodrag w-full border-2 border-black" value={preset} onChange={(e) => patch({ presetIds: data.presetIds.map((v, index) => index === i ? Number(e.target.value) : v) })}>{ANIMATION_PRESETS.map((p) => <option value={p.id} key={p.id}>{p.name} ({p.id})</option>)}{!ANIMATION_PRESETS.some((p) => p.id === preset) && <option value={preset}>Library ID {preset}</option>}</select><button className="nodrag" onClick={() => patch({ presetIds: data.presetIds.filter((_, index) => index !== i) })}>×</button></div>)}<button className="nodrag border-2 border-black p-1" disabled={data.presetIds.length >= 10} onClick={() => patch({ presetIds: [...data.presetIds, 0] })}>+ Preset</button><label className="block">Other library ID (0–696)<input className="nodrag border-2 border-black w-full" type="number" min={0} max={696} onKeyDown={(e) => { if (e.key === "Enter" && data.presetIds.length < 10) { const n = Number(e.currentTarget.value); if (Number.isInteger(n) && n >= 0 && n <= 696) patch({ presetIds: [...data.presetIds, n] }); } }} /></label><p>Connect Animation for a custom clip. Remove all presets for local-only retargeting.</p></div>}
       {type === "export" && <>{field("characterName", "Character name")}{field("target", "Target", ["unity", "unreal"])}{field("triangleBudget", "Triangle budget")}</>}

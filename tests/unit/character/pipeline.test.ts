@@ -38,7 +38,7 @@ describe("character payload builders", () => {
     expect(extractCharacterArtifacts({ model_mesh: { url: "https://fal.media/a.fbx" }, model_urls: { fbx: { url: "https://fal.media/a.fbx" }, pbr_model: { url: "https://fal.media/b.glb" } }, animations: [{ animation_glb: { url: "https://fal.media/c.glb" } }, { animation_glb: { url: "https://fal.media/d.glb" } }] })).toHaveLength(4);
   });
   it("generates front first, side, optional back and separate cutouts", () => {
-    expect(viewPrompts(false, "sword, shield").map((v) => v.name)).toEqual(["front", "left", "equipment-sword", "equipment-shield"]);
+    expect(viewPrompts(false, "sword, shield").map((v) => v.name)).toEqual(["front", "right", "equipment-sword", "equipment-shield"]);
     expect(ANIMATION_PRESETS.find((p) => p.id === 0)?.name).toBe("Idle");
     expect(ANIMATION_PRESETS.find((p) => p.id === 669)?.name).toMatch(/Walk/);
   });
@@ -58,6 +58,10 @@ describe("character graph", () => {
     expect(characterInputs(mesh, [view, mesh], edges).imageAssetIds).toEqual(["f"]);
     mesh.data.provider = "tripo-h31"; mesh.data.tripoMultiview = true;
     expect(characterInputs(mesh, [view, mesh], edges).imageAssetIds).toEqual(["f", "l", "b"]);
+    view.data.artifactAssetIds = { front: "f", right: "r", back: "b" };
+    const inputs = characterInputs(mesh, [view, mesh], edges);
+    expect(inputs.imageAssetIds).toEqual(["f", "b", "r"]);
+    expect(inputs.viewNames).toEqual(["front", "back", "right"]);
   });
   it("appends output history", () => {
     expect(resultPatch({ outputAssetId: "new", assets: [{ name: "model", kind: "glb", assetId: "new" }] }, { outputAssetIds: ["old"] }).outputAssetIds).toEqual(["old", "new"]);

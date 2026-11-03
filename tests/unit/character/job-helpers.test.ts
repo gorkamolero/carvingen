@@ -36,3 +36,18 @@ describe("character pricing", () => {
     expect(estimateNodeCost({ type: "rig", data: {} } as never).usd).toBeCloseTo(0.2);
   });
 });
+
+import { withRetries } from "@/lib/character/jobs";
+describe("withRetries", () => {
+  it("retries a dropped connection, then returns", async () => {
+    let calls = 0;
+    const value = await withRetries(async () => { calls++; if (calls < 3) throw new TypeError("fetch failed"); return "ok"; }, 6, 1);
+    expect(value).toBe("ok");
+    expect(calls).toBe(3);
+  });
+  it("does not retry a provider error", async () => {
+    let calls = 0;
+    await expect(withRetries(async () => { calls++; throw new Error("Unprocessable Entity"); }, 6, 1)).rejects.toThrow("Unprocessable Entity");
+    expect(calls).toBe(1);
+  });
+});

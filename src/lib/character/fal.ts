@@ -49,11 +49,13 @@ export function buildAnimationRequest(modelUrl: string, heightMeters: number, id
 export { ANIMATION_PRESETS } from "./animation-library";
 const VIEW_ANGLE: Record<string, string> = {
   front: "The whole body faces the camera.",
-  left: "Strict 90-degree side profile: rotate the whole body, hips, shoulders, feet and head together so the character faces screen left; only one eye is visible and the arms extend toward and away from the camera.",
+  // Image models reliably draw a profile facing screen left, which is the character's right side.
+  // The Mesh job mirrors it into Tripo's "left" slot (Tripo order: front, left, back, right).
+  right: "Strict 90-degree side profile of the character's right side: rotate the whole body, hips, shoulders, feet and head together so the character faces screen left; only one eye is visible and the arms extend toward and away from the camera.",
   back: "The whole body faces away from the camera; the face is not visible.",
 };
 export function viewPrompts(includeBack: boolean, equipment: string) {
-  const views = ["front", "left", ...(includeBack ? ["back"] : [])];
+  const views = ["front", "right", ...(includeBack ? ["back"] : [])];
   return [
     ...views.map((view) => ({ name: view, prompt: [
       `Using the reference image, create a clean direct ${view} view of the same character. ${VIEW_ANGLE[view]}`,

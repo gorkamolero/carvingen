@@ -2,6 +2,7 @@ import { combineAnimationGlbs } from "./pack";
 import { fal } from "@fal-ai/client";
 import { readFile, mkdir, writeFile, copyFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import sharp from "sharp";
 import { ANIMATION_PRESETS } from "./animation-library";
 import { basename, join, resolve } from "node:path";
 import { z } from "zod";
@@ -26,6 +27,7 @@ export const pipelineRequestSchema = z.object({
   imageAssetIds: z.array(z.string()).max(14).default([]),
   meshAssetIds: z.array(z.string()).max(30).default([]),
   animationAssetIds: z.array(z.string()).max(10).default([]),
+  viewNames: z.array(z.enum(["front", "left", "back", "right"])).max(4).optional(),
 });
 export type PipelineRequest = z.infer<typeof pipelineRequestSchema>;
 export type JobOutput = { name: string; kind: string; assetId: string };
@@ -83,6 +85,25 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
     uploaded.set(id, stored);
     return stored;
   }
+  /** Tripo multi-view wants [front, left, back, right]; a missing side is the other side mirrored. */
+  async function tripoViewUrls(names: string[], ids: string[]) {
+    const byName = new Map(names.map((n, i) => [n, ids[i]]));
+    const front = byName.get("front");
+    if (!front) throw new Error("Tripo multi-view needs a front view.");
+    const side = async (name: "left" | "right", other: "left" | "right") => {
+      const own = byName.get(name);
+      if (own) return url(own);
+      const source = byName.get(other);
+      if (!source) return null;
+      fal.config({ credentials: getFalKey() });
+      const mirrored = await sharp(await readFile((await asset(source)).localPath)).flop().png().toBuffer();
+      return fal.storage.upload(new File([new Uint8Array(mirrored)], `${source}-mirrored-${name}.png`, { type: "image/png" }));
+    };
+    const left = await side("left", "right"), right = await side("right", "left");
+    const back = byName.get("back");
+    if (!left) return [await url(front)];
+    return [await url(front), left, ...(back ? [await url(back)] : []), ...(back && right ? [right] : [])];
+  }
   async function local(id: string) {
     const a = await asset(id);
     const ext = a.mimeType === "model/gltf-binary" || /glb/.test(a.kind) ? "glb" : /fbx/.test(a.kind) ? "fbx" : a.originalFileName?.split(".").pop()?.toLowerCase() ?? a.localPath.split(".").pop();
@@ -114,12 +135,13 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
     await writeFile(join(directory, `provider-${Date.now()}.json`), JSON.stringify({ slug, requestId: submission.request_id }));
     const deadline = Date.now() + 30 * 60 * 1000;
     while (true) {
-      const status = await fal.queue.status(slug, { requestId: submission.request_id, logs: true });
+      // A dropped connection while polling must not fail a job the provider is still running (and billing).
+      const status = await withRetries(() => fal.queue.status(slug, { requestId: submission.request_id, logs: true }));
       if (status.status === "COMPLETED") break;
       if (Date.now() > deadline) throw new Error("Provider polling timed out; the provider may still finish. Do not blindly rerun.");
       await progress(20, status.status); await new Promise((r) => setTimeout(r, 2000));
     }
-    const result = await fal.queue.result(slug, { requestId: submission.request_id });
+    const result = await withRetries(() => fal.queue.result(slug, { requestId: submission.request_id }));
     const data = result.data as Record<string, unknown>;
     if (typeof data.rig_task_id === "string") metadata.rigTaskId = data.rig_task_id;
     for (const file of extractCharacterArtifacts(data)) {
@@ -132,7 +154,9 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
   switch (kind) {
     case "mesh": {
       const mesh = meshNodeDataSchema.parse(request.data);
-      const images = await Promise.all(request.imageAssetIds.map(url));
+      const images = request.viewNames && mesh.provider === "tripo-h31" && (mesh as { tripoMultiview?: boolean }).tripoMultiview
+        ? await tripoViewUrls(request.viewNames, request.imageAssetIds)
+        : await Promise.all(request.imageAssetIds.map(url));
       await generate(pickMeshSlug(mesh.mode, mesh.provider, mesh), buildMeshRequest({ ...mesh, imageUrls: images }));
       break;
     }
@@ -141,7 +165,7 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
       break;
     case "bake":
       if (d.engine === "tripo") await generate(CHARACTER_ENDPOINTS.remesh, buildRemeshRequest(await url(inputId), d.targetTriangles, d.quad));
-      else await blender("bake", { input: await local(inputId), targetTriangles: d.targetTriangles, keepUvs: d.keepUvs, textureSize: d.textureSize });
+      else await blender("bake", { input: await local(inputId), targetTriangles: d.targetTriangles, keepUvs: d.keepUvs, textureSize: d.textureSize, turnDegrees: d.turnDegrees });
       break;
     case "rig":
       await generate(CHARACTER_ENDPOINTS.rig, buildRigRequest(await url(inputId), d.heightMeters)); break;
@@ -187,4 +211,17 @@ export function clipDisplayName(assetName: string, presetIds: number[]) {
   const index = /^animations-(\d+)-/.exec(assetName)?.[1];
   const preset = index === undefined ? undefined : ANIMATION_PRESETS.find((p) => p.id === presetIds[Number(index)]);
   return preset?.name ?? assetName;
+}
+
+/** Retries network-level failures (not provider errors) a few times with a growing pause. */
+export async function withRetries<T>(call: () => Promise<T>, attempts = 6, pauseMs = 2000): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try { return await call(); }
+    catch (error) {
+      const message = error instanceof Error ? `${error.message} ${String((error as { cause?: unknown }).cause ?? "")}` : String(error);
+      const transient = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR|socket hang up|network/i.test(message);
+      if (!transient || attempt >= attempts) throw error;
+      await new Promise((r) => setTimeout(r, pauseMs * attempt));
+    }
+  }
 }

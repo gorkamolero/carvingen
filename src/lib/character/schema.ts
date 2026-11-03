@@ -19,6 +19,8 @@ export const pipelineDataSchema = z.object({
   engine: z.enum(["blender", "tripo"]).default("blender"),
   targetTriangles: z.number().int().min(48).max(2000000).default(12000),
   keepUvs: z.boolean().default(false),
+  /** Bake: turn the model around its up axis before baking, for meshes that come out facing sideways. */
+  turnDegrees: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]).default(0),
   textureSize: z.union([z.literal(1024), z.literal(2048), z.literal(4096)]).default(2048),
   quad: z.boolean().default(false),
   heightMeters: z.number().positive().max(100).default(1.8),

@@ -200,11 +200,11 @@ These nodes have separate palette tiles. All runnable character nodes and Mesh u
 
 ### Multi-view (`multiview`)
 
-One `image-in`; one selectable `image-out` (front by default). Nano Banana 2 edit produces T-pose front and left, optional back, and separate equipment cutouts on white. Equipment names are comma-separated. H3.1 multi-view consumes front/left/back automatically when enabled, excluding equipment.
+One `image-in`; one selectable `image-out` (front by default). Nano Banana 2 edit produces T-pose front, right side and optional back views, and separate equipment cutouts on white. The side view is the character's right side because image models reliably draw a profile facing screen left; for Tripo multi-view the Mesh job mirrors it into Tripo's left slot and sends front, left, back, right. To steer skin, eyes or outfit, put a Prompt node between the reference and Multi-view and describe the character there. Equipment names are comma-separated. H3.1 multi-view consumes front/left/back automatically when enabled, excluding equipment.
 
 ### Bake (`bake`)
 
-`glb-in` → `glb-out`. Default local Blender: target 12000 triangles, keep-UV option, 1024/2048/4096 texture (default 2048), base-color bake and GLB/FBX/PNG downloads. Displays actual triangles and progress. Tripo remesh is an alternative engine with face limit and quad controls; remote outputs vary by provider.
+`glb-in` → `glb-out`. Default local Blender: target 12000 triangles, keep-UV option, 1024/2048/4096 texture (default 2048), base-color bake and GLB/FBX/PNG downloads. Turn (0/90/180/270 degrees about the up axis) rotates a mesh that came out facing sideways so it faces front before rigging; riggers assume the glTF front, and a sideways mesh rigs with legs that walk sideways. Displays actual triangles and progress. Tripo remesh is an alternative engine with face limit and quad controls; remote outputs vary by provider.
 
 ### Rig (`rig`)
 

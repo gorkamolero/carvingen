@@ -3,11 +3,19 @@ import { getIncomingImageAssetIds } from "@/lib/graph/selectors";
 import type { CarvingNode, CarvingEdge } from "@/lib/graph/types";
 import type { PipelineRequest, PipelineResult } from "./jobs";
 
+const MULTIVIEW_ORDER = ["front", "left", "back", "right"] as const;
+type ViewName = typeof MULTIVIEW_ORDER[number];
 export function characterInputs(node: CarvingNode, nodes: readonly CarvingNode[], edges: readonly CarvingEdge[]) {
   const incoming = (handle: string) => edges.filter((e) => e.target === node.id && e.targetHandle === handle).map((e) => nodes.find((n) => n.id === e.source)).filter((n): n is CarvingNode => !!n);
   let imageAssetIds = getIncomingImageAssetIds(node.id, nodes, edges);
+  let viewNames: ViewName[] | undefined;
   if (node.type === "mesh" && node.data.provider === "tripo-h31" && node.data.tripoMultiview) {
-    imageAssetIds = incoming("image-in").flatMap((n) => n.type === "multiview" ? ["front", "left", "back"].map((v) => n.data.artifactAssetIds[v]).filter(Boolean) : getIncomingImageAssetIds(node.id, [n], edges));
+    viewNames = [];
+    imageAssetIds = incoming("image-in").flatMap((n) => {
+      if (n.type !== "multiview") return getIncomingImageAssetIds(node.id, [n], edges);
+      return MULTIVIEW_ORDER.flatMap((v) => n.data.artifactAssetIds[v] ? (viewNames!.push(v), [n.data.artifactAssetIds[v]]) : []);
+    });
+    if (viewNames.length !== imageAssetIds.length) viewNames = undefined;
   }
   const meshAssetIds = incoming("glb-in").flatMap((n) => {
     if (!("outputAssetId" in n.data)) return [];
@@ -17,7 +25,7 @@ export function characterInputs(node: CarvingNode, nodes: readonly CarvingNode[]
     }
     return n.data.outputAssetId ? [n.data.outputAssetId] : Object.entries(n.data.artifactAssetIds).filter(([k]) => /fbx/.test(k)).slice(0, 1).map(([, id]) => id);
   });
-  return { imageAssetIds: [...new Set(imageAssetIds)], meshAssetIds: [...new Set(meshAssetIds)], animationAssetIds: incoming("animation-in").flatMap((n) => n.type === "animation" && n.data.assetId ? [n.data.assetId] : []) };
+  return { ...(viewNames ? { viewNames } : {}), imageAssetIds: viewNames ? imageAssetIds : [...new Set(imageAssetIds)], meshAssetIds: [...new Set(meshAssetIds)], animationAssetIds: incoming("animation-in").flatMap((n) => n.type === "animation" && n.data.assetId ? [n.data.assetId] : []) };
 }
 export async function submitCharacterJob(kind: string, request: PipelineRequest) {
   return fetchJson<{ jobId: string }>(`/api/jobs/${kind}`, { method: "POST", body: JSON.stringify(request) });

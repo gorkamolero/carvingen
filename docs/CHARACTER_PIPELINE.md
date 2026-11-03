@@ -44,11 +44,17 @@ Raw free GET responses are in `docs/fal-schemas/`.
 
 Run labels and the dry run use these rates (`src/lib/fal/pricing.ts`). The example comes to about $2.22 per character. Tripo remesh is the only node still shown without a total. The verified run and its spend are in [COSTS.md](COSTS.md).
 
+## Robustness
+
+- Run buttons read the live graph when clicked, so a node uses an upstream rerun's outputs even if it has not re-rendered.
+- Provider polling and result fetches retry dropped connections; a network blip no longer fails a job the provider is still running and billing.
+- Multi-view's side view is the character's right side; Tripo multi-view gets front, left (that view mirrored), back and right.
+
 ## Local processing and limits
 
 `BLENDER_PATH` defaults to `/opt/homebrew/bin/blender`. Scripts target Blender 5.x. Each job uses an isolated storage directory, fixed script names, JSON arguments and `spawn` with no shell. A missing binary produces a clear job failure. A 30-minute limit bounds each subprocess/provider poll. Imported file extensions are reconstructed from asset types; FBX/GLB uploads are checked for signatures, BVH for its hierarchy header, and the existing byte limit applies.
 
-Bake joins static meshes, applies transforms, decimates to a triangle target, optionally retains UVs, otherwise smart-projects, and bakes selected high-poly diffuse color to active low-poly on CPU. It exports embedded texture GLB/FBX plus PNG. It rejects skinned meshes: bake before rigging. Decimation is a triangle budget tool, not anatomical edge-loop retopology. Texture sizes are 1024/2048/4096.
+Bake joins static meshes, applies an optional turn about the up axis (some image-to-3D results face +X instead of the glTF front, which makes riggers place the legs sideways), applies transforms, decimates to a triangle target, optionally retains UVs, otherwise smart-projects, and bakes selected high-poly diffuse color to active low-poly on CPU. It exports embedded texture GLB/FBX plus PNG. It rejects skinned meshes: bake before rigging. Decimation is a triangle budget tool, not anatomical edge-loop retopology. Texture sizes are 1024/2048/4096.
 
 Custom retargeting maps Mixamo/Humanoid names, transfers rotation deltas between rest-bone coordinate frames, scales hips translation and keys every frame on the destination. It rejects fewer than two matching bones. Complex rigs, constraints and markedly different proportions still need visual review; this is not IK-based contact correction.
 

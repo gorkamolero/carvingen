@@ -6,7 +6,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { characterInputs, submitCharacterJob, pollCharacterJob, resultPatch } from "@/lib/character/client";
 import { estimateNodeCost } from "@/lib/fal/pricing";
-import { useSnapshot } from "valtio";
+import { snapshot, useSnapshot } from "valtio";
 
 import { getAssetUrl } from "@/lib/assets/url";
 import { graphHistory, markNodeDirty, updateMeshNode } from "@/lib/graph/store";
@@ -36,9 +36,11 @@ export function MeshNode({ id, data }: NodeProps<MeshGraphNode>) {
   }, [query.data, data, id]);
   const runMutation = useMutation({
     mutationFn: async () => {
-      if (!graph.activeProjectId) throw new Error("No active project.");
-      const inputs = characterInputs({ id, type: "mesh", data, position: { x: 0, y: 0 } }, graph.nodes as unknown as import("@/lib/graph/types").CarvingNode[], graph.edges as unknown as import("@/lib/graph/types").CarvingEdge[]);
-      return submitCharacterJob("mesh", { projectId: graph.activeProjectId, nodeId: id, data, ...inputs });
+      // Read the live graph at click time: a render-time snapshot can predate an upstream rerun.
+      const live = snapshot(graphHistory.value);
+      if (!live.activeProjectId) throw new Error("No active project.");
+      const inputs = characterInputs({ id, type: "mesh", data, position: { x: 0, y: 0 } }, live.nodes as unknown as import("@/lib/graph/types").CarvingNode[], live.edges as unknown as import("@/lib/graph/types").CarvingEdge[]);
+      return submitCharacterJob("mesh", { projectId: live.activeProjectId, nodeId: id, data, ...inputs });
     },
     onMutate: () => showLoadingToast({ title: "Mesh queued", description: "Starting generation" }),
     onSuccess: (job, _variables, toastId) => {
