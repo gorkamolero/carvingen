@@ -20,6 +20,8 @@ describe("clipDisplayName", () => {
     expect(clipDisplayName("animations-0-animation_glb", [0, 30])).toBe("Idle");
     expect(clipDisplayName("animations-1-animation_glb", [0, 30])).toBe("Casual_Walk");
     expect(clipDisplayName("custom-0-glb", [0, 30])).toBe("custom-0-glb");
+    expect(clipDisplayName("animations-tripo-walk-glb", [])).toBe("Walk");
+    expect(clipDisplayName("animations-tripo-idle", [])).toBe("Idle");
   });
 });
 

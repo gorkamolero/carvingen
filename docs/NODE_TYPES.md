@@ -218,6 +218,8 @@ One `image-in`; one selectable `image-out` (front by default). Nano Banana 2 edi
 
 `glb-in` plus optional `animation-in` → `glb-out`. Select up to ten library preset slots, or remove presets for local-only custom clips. fal multi-animation rerigs its input and cannot reuse a rig task ID. Download individual clips, a combined GLB and ZIP. Viewer plays the combined clips.
 
+In place (default on, Tripo presets): Tripo plays the clip without forward travel, then a local Blender step (`scripts/blender/recentre.py`) moves the root back to the rest position, since Tripo's in-place clips can still start offset (a walk 1.4 m forward), and writes the GLB and FBX. Turning it off keeps Tripo's root motion and uses Tripo's FBX conversion.
+
 ### Animation (`animation`)
 
 Upload FBX/BVH/GLB through the asset uploader; `animation-out` connects to Animate. No provider cost. MIME, extension, signature and size are validated.

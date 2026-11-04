@@ -16,7 +16,8 @@ describe("Tripo native API", () => {
   });
   it("builds v3 Mixamo and single-preset requests", () => {
     expect(buildTripoRigRequest("file_a")).toEqual({ input: "file_a", model: "v3.0-20260909", rig_type: "biped", spec: "mixamo", out_format: "glb" });
-    expect(buildTripoRetargetRequest("rig_a", "preset:walk")).toEqual({ input: "rig_a", animation: "preset:walk", out_format: "glb", export_with_geometry: true });
+    expect(buildTripoRetargetRequest("rig_a", "preset:walk")).toEqual({ input: "rig_a", animation: "preset:walk", out_format: "glb", export_with_geometry: true, animate_in_place: true });
+    expect(buildTripoRetargetRequest("rig_a", "preset:walk", false).animate_in_place).toBe(false);
   });
   it("uploads multipart GLB, checks it, rigs it and converts its output", async () => {
     const fetcher = vi.fn<typeof fetch>()
@@ -76,7 +77,8 @@ describe("Tripo native API", () => {
     const edges = [{ id: "edge", source: "rig", target: "animate", targetHandle: "glb-in" }] as CarvingEdge[];
     expect(characterInputs(animate, [rig, animate], edges)).toMatchObject({ inputRigEngine: "tripo", inputTripoRigTaskId: "rig-task", meshAssetIds: ["rig-glb"] });
     expect(estimateNodeCost({ type: "rig", data: { ...rig.data, engine: "tripo" } }).usd).toBe(0.3);
-    expect(estimateNodeCost({ type: "animate", data: { ...animate.data, rigEngine: "tripo" } }).usd).toBe(0.3);
+    expect(estimateNodeCost({ type: "animate", data: { ...animate.data, rigEngine: "tripo" } }).usd).toBe(0.2);
+    expect(estimateNodeCost({ type: "animate", data: { ...animate.data, rigEngine: "tripo", inPlace: false } }).usd).toBe(0.3);
     expect(createPipelineData("rig").engine).toBe("meshy");
     expect(resultPatch({ assets: [], outputAssetId: "meshy" }, { outputAssetIds: [] }).tripoRigTaskId).toBeNull();
   });

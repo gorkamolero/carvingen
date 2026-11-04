@@ -22,7 +22,7 @@ export function estimateNodeCost(node: Pick<CarvingNode, "type" | "data">): { us
   }
   if (node.type === "multiview" && "equipment" in d) { const usd = viewPrompts(d.includeBack, d.equipment).length * 0.08; return { usd, label: `~$${usd.toFixed(2)}` }; }
   if ((node.type === "rig" && "engine" in d && d.engine === "tripo") || (node.type === "animate" && "rigEngine" in d && d.rigEngine === "tripo")) {
-    const credits = node.type === "rig" ? TRIPO_CREDITS.rig + TRIPO_CREDITS.convert : (TRIPO_CREDITS.retarget + TRIPO_CREDITS.convert) * new Set("tripoPresetIds" in d ? d.tripoPresetIds : []).size;
+    const credits = node.type === "rig" ? TRIPO_CREDITS.rig + TRIPO_CREDITS.convert : (TRIPO_CREDITS.retarget + ("inPlace" in d && d.inPlace === false ? TRIPO_CREDITS.convert : 0)) * new Set("tripoPresetIds" in d ? d.tripoPresetIds : []).size; // in-place clips get their FBX from the local recentre step
     const usd = credits * TRIPO_CREDITS.usdPerCredit;
     return { usd, label: `${credits} Tripo credits · ~$${usd.toFixed(2)}` };
   }

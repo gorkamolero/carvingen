@@ -8,7 +8,7 @@ import { parseBlenderProgress } from "./progress";
 const launchBlender = spawn.bind(null);
 
 export type BlenderResult = { files: { name: string; kind: string; path: string }[]; triangleCount?: number; boneNames?: string[]; budgetPass?: boolean; clips?: unknown[] };
-export async function runBlender(script: "bake" | "retarget" | "export", args: Record<string, unknown>, directory: string,
+export async function runBlender(script: "bake" | "retarget" | "export" | "recentre", args: Record<string, unknown>, directory: string,
   onProgress: (progress: number, status: string) => void = () => {}) {
   await mkdir(directory, { recursive: true });
   const config = join(directory, "input.json");

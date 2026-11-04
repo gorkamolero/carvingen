@@ -121,7 +121,7 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
     if (!saved) throw new Error("Could not save output.");
     assets.push({ name: file.name, kind: file.kind, assetId: saved.id });
   }
-  async function blender(script: "bake" | "retarget" | "export", args: Record<string, unknown>, suffix: string = script) {
+  async function blender(script: "bake" | "retarget" | "export" | "recentre", args: Record<string, unknown>, suffix: string = script) {
     let writes = Promise.resolve();
     const result = await runBlender(script, args, join(directory, suffix), (p, s) => { writes = writes.then(() => progress(p, s)); });
     await writes;
@@ -133,10 +133,15 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
       await writeFile(join(directory, `tripo-${taskId}.json`), JSON.stringify({ taskId, endpoint }));
     } });
   }
-  async function saveTripoPair(client: TripoClient, task: import("@/lib/tripo/client").TripoTask, name: string) {
+  async function saveTripoPair(client: TripoClient, task: import("@/lib/tripo/client").TripoTask, name: string, recentre = false) {
     const glb = tripoArtifact(task, "glb", name);
     const saved = await persistRemoteAsset({ ...glb, jobId });
     if (!saved) throw new Error(`Could not persist ${glb.name}`);
+    if (recentre) {
+      // In-place clips can still start offset from the rest pose; Blender moves the root back and writes GLB + FBX.
+      await blender("recentre", { input: await local(saved.id), name }, `recentre-${name}`);
+      return;
+    }
     assets.push({ name: glb.name, kind: glb.kind, assetId: saved.id });
     const fbx = tripoArtifact(await client.convertFbx(glb.sourceUrl), "fbx", name);
     const savedFbx = await persistRemoteAsset({ ...fbx, jobId });
@@ -210,7 +215,7 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
         if (!d.tripoPresetIds.length && !request.animationAssetIds.length) throw new Error("Select a preset or connect a custom animation.");
         if (d.tripoPresetIds.length) {
           const tripo = tripoClient();
-          for (const preset of new Set(d.tripoPresetIds)) await saveTripoPair(tripo, await tripo.retarget(request.inputTripoRigTaskId, preset), `animations-tripo-${preset.slice(7)}`);
+          for (const preset of new Set(d.tripoPresetIds)) await saveTripoPair(tripo, await tripo.retarget(request.inputTripoRigTaskId, preset, d.inPlace), `animations-tripo-${preset.slice(7)}`, d.inPlace);
         }
         metadata = { rigEngine: "tripo", tripoRigTaskId: request.inputTripoRigTaskId };
       } else {
@@ -253,6 +258,8 @@ export function isPrivateUrl(value: string) {
 
 /** Meshy returns clips as animations-<index>-…; name them after the preset that was asked for. */
 export function clipDisplayName(assetName: string, presetIds: number[]) {
+  const tripo = /^animations-tripo-(.+?)(?:-glb)?$/.exec(assetName)?.[1];
+  if (tripo) return tripo.charAt(0).toUpperCase() + tripo.slice(1);
   const index = /^animations-(\d+)-/.exec(assetName)?.[1];
   const preset = index === undefined ? undefined : ANIMATION_PRESETS.find((p) => p.id === presetIds[Number(index)]);
   return preset?.name ?? assetName;

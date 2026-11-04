@@ -4,9 +4,10 @@ import { TRIPO_PRESET_IDS, type TripoPreset } from "./presets";
 const BASE = "https://openapi.tripo3d.ai/v3";
 export type TripoTask = { task_id: string; status: string; progress?: number; error_message?: string; credits_consumed?: number; output?: { model_url?: string; riggable?: boolean; rig_type?: string } };
 export function buildTripoRigRequest(input: string) { return { input, model: "v3.0-20260909", rig_type: "biped", spec: "mixamo", out_format: "glb" }; }
-export function buildTripoRetargetRequest(input: string, animation: TripoPreset) {
+export function buildTripoRetargetRequest(input: string, animation: TripoPreset, inPlace = true) {
   if (!TRIPO_PRESET_IDS.includes(animation)) throw new Error("Unsupported Tripo v3 animation preset");
-  return { input, animation, out_format: "glb", export_with_geometry: true };
+  // In place keeps the root still (no forward travel), which game controllers and the Viewer expect.
+  return { input, animation, out_format: "glb", export_with_geometry: true, animate_in_place: inPlace };
 }
 export function tripoArtifact(task: TripoTask, kind: "glb" | "fbx", name: string) {
   const sourceUrl = task.output?.model_url;
@@ -60,6 +61,6 @@ export class TripoClient {
     return task;
   }
   rig(input: string) { return this.task("/animations/rig", buildTripoRigRequest(input), "Tripo rig"); }
-  retarget(input: string, animation: TripoPreset) { return this.task("/animations/retarget", buildTripoRetargetRequest(input, animation), `Tripo ${animation}`); }
+  retarget(input: string, animation: TripoPreset, inPlace = true) { return this.task("/animations/retarget", buildTripoRetargetRequest(input, animation, inPlace), `Tripo ${animation}`); }
   convertFbx(modelUrl: string) { return this.task("/models/convert", { input: modelUrl, format: "FBX", with_animation: true }, "Tripo FBX conversion"); }
 }

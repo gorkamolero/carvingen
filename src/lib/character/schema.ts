@@ -35,6 +35,8 @@ export const pipelineDataSchema = z.object({
   budgetPass: z.boolean().nullable().default(null),
   rigEngine: z.enum(["meshy", "tripo"]).nullable().default(null),
   tripoRigTaskId: z.string().nullable().default(null),
+  /** Animate: keep the root still (no forward travel). Applies to Tripo presets. */
+  inPlace: z.boolean().default(true),
   tripoPresetIds: z.array(z.enum(TRIPO_PRESET_IDS)).max(10).default(["preset:idle", "preset:walk"]),
   rigTaskId: z.string().nullable().default(null),
 });
