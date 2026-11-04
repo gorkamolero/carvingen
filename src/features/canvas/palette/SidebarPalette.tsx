@@ -47,10 +47,10 @@ const paletteItems: PaletteItem[] = [
   { type: "prompt", label: "Prompt", accent: "bg-[#ffd400]", hoverTint: "hover:bg-[#fff7bf]", Icon: Icons.prompt },
   { type: "vision", label: "Vision", accent: "bg-[#ff8a3d]", hoverTint: "hover:bg-[#ffe8d5]", Icon: Icons.vision },
   { type: "mesh", label: "Mesh", accent: "bg-[#3e8cff]", hoverTint: "hover:bg-[#dce9ff]", Icon: Icons.mesh },
-  ...(["multiview", "bake", "rig", "animate", "animation", "export", "viewer"] as const).map((type) => ({
-    type, label: ({ multiview: "Multi-view", bake: "Bake", rig: "Rig", animate: "Animate", animation: "Clip upload", export: "Export", viewer: "Viewer" })[type],
+  ...(["multiview", "bake", "rig", "motion", "animate", "animation", "export", "viewer"] as const).map((type) => ({
+    type, label: ({ multiview: "Multi-view", bake: "Bake", rig: "Rig", motion: "Motion", animate: "Animate", animation: "Clip upload", export: "Export", viewer: "Viewer" })[type],
     accent: "bg-[#ffd400]", hoverTint: "hover:bg-[#fff7bf]",
-    Icon: () => <span className="flex h-full items-center justify-center text-xl font-black" aria-hidden>{({ multiview: "▦", bake: "▧", rig: "⚒", animate: "▶", animation: "↑", export: "⇥", viewer: "◉" })[type]}</span>,
+    Icon: () => <span className="flex h-full items-center justify-center text-xl font-black" aria-hidden>{({ multiview: "▦", bake: "▧", rig: "⚒", motion: "↝", animate: "▶", animation: "↑", export: "⇥", viewer: "◉" })[type]}</span>,
   })),
 ];
 

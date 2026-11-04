@@ -1,3 +1,5 @@
+import { runMotionJob } from "./motion-job";
+import type { MotionReport } from "./motion";
 import { withRetries } from "./retries";
 export { withRetries } from "./retries";
 import { TripoClient, tripoArtifact } from "@/lib/tripo/client";
@@ -18,7 +20,7 @@ import { buildMeshRequest, pickMeshSlug } from "@/lib/fal/mesh";
 import { persistRemoteAsset } from "@/lib/storage/persist-remote";
 import { sha256 } from "@/lib/storage/hash";
 import { pipelineDataSchema } from "./schema";
-import { CHARACTER_ENDPOINTS, buildAnimationRequest, buildRemeshRequest, buildRigRequest, extractCharacterArtifacts, viewPrompts } from "./fal";
+import { CHARACTER_ENDPOINTS, buildMotionVideoRequest, buildAnimationRequest, buildRemeshRequest, buildRigRequest, extractCharacterArtifacts, viewPrompts } from "./fal";
 import { runBlender, type BlenderResult } from "./blender";
 import { inspectGlb } from "./inspect";
 import { makeZip } from "./zip";
@@ -37,8 +39,8 @@ export const pipelineRequestSchema = z.object({
 });
 export type PipelineRequest = z.infer<typeof pipelineRequestSchema>;
 export type JobOutput = { name: string; kind: string; assetId: string };
-export type PipelineResult = { assets: JobOutput[]; outputAssetId: string | null; triangleCount?: number; boneNames?: string[]; rigEngine?: "meshy" | "tripo"; tripoRigTaskId?: string | null; rigTaskId?: string | null; budgetPass?: boolean; clips?: unknown[] };
-export const RUNNABLE_KINDS = ["mesh", "multiview", "bake", "rig", "animate", "export"] as const;
+export type PipelineResult = { motion?: MotionReport; lastRunCost?: number; assets: JobOutput[]; outputAssetId: string | null; triangleCount?: number; boneNames?: string[]; rigEngine?: "meshy" | "tripo"; tripoRigTaskId?: string | null; rigTaskId?: string | null; budgetPass?: boolean; clips?: unknown[] };
+export const RUNNABLE_KINDS = ["mesh", "multiview", "bake", "rig", "motion", "animate", "export"] as const;
 export type RunnableKind = typeof RUNNABLE_KINDS[number];
 const globalJobs = globalThis as typeof globalThis & { characterJobs?: Set<string> };
 const active = globalJobs.characterJobs ??= new Set<string>();
@@ -73,7 +75,8 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
   await mkdir(directory, { recursive: true });
   const assets: JobOutput[] = [];
   let metadata: Omit<PipelineResult, "assets" | "outputAssetId"> = {};
-  async function progress(value: number, status: string) { await updateJobProgress(jobId, value, status); }
+  let partial: object = {};
+  async function progress(value: number, status: string, next?: object) { if (next) partial = next; await updateJobProgress(jobId, value, status, { assets, ...partial }); }
   async function asset(id: string) { const a = await getAssetById(id); if (!a) throw new Error(`Input asset ${id} not found.`); return a; }
   const uploaded = new Map<string, string>();
   async function url(id: string) {
@@ -114,12 +117,13 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
   async function saveLocal(file: BlenderResult["files"][number]) {
     if (!resolve(file.path).startsWith(resolve(directory) + "/")) throw new Error("Blender returned a path outside its output directory.");
     const buffer = await readFile(file.path);
-    const mime = ({ image: "image/png", glb: "model/gltf-binary", fbx: "application/octet-stream", texture: "image/png", manifest: "application/json", zip: "application/zip" } as Record<string, string>)[file.kind] ?? "application/octet-stream";
+    const mime = ({ text: "text/plain", json: "application/json", video: "video/mp4", image: "image/png", glb: "model/gltf-binary", fbx: "application/octet-stream", texture: "image/png", manifest: "application/json", zip: "application/zip" } as Record<string, string>)[file.kind] ?? "application/octet-stream";
     const hash = sha256(buffer);
     // A rerun can produce a byte-identical file (same clip, same settings); reuse that asset.
     const saved = (await getAssetBySha(hash, buffer.length)) ?? await createAssetRecord({ jobId, kind: file.kind, mimeType: mime, localPath: file.path, sha256: hash, bytes: buffer.length, originalFileName: basename(file.path) });
     if (!saved) throw new Error("Could not save output.");
     assets.push({ name: file.name, kind: file.kind, assetId: saved.id });
+    return saved.id;
   }
   async function blender(script: "bake" | "retarget" | "export" | "recentre", args: Record<string, unknown>, suffix: string = script) {
     let writes = Promise.resolve();
@@ -148,12 +152,13 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
     if (!savedFbx) throw new Error(`Could not persist ${fbx.name}`);
     assets.push({ name: fbx.name, kind: fbx.kind, assetId: savedFbx.id });
   }
-  async function generate(slug: string, input: Record<string, unknown>, prefix = "") {
+  async function generate(slug: string, input: Record<string, unknown>, prefix = "", submitted?: (id: string) => Promise<void>) {
     fal.config({ credentials: getFalKey() });
     await progress(5, `Submitting ${slug}`);
     const submission = await fal.queue.submit(slug, { input });
     // Persist request IDs immediately for reconciliation after an interrupted server.
     await writeFile(join(directory, `provider-${Date.now()}.json`), JSON.stringify({ slug, requestId: submission.request_id }));
+    await submitted?.(submission.request_id);
     const deadline = Date.now() + 30 * 60 * 1000;
     while (true) {
       // A dropped connection while polling must not fail a job the provider is still running (and billing).
@@ -209,6 +214,20 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
       }
       metadata.rigEngine = "meshy";
       await generate(CHARACTER_ENDPOINTS.rig, buildRigRequest(await url(inputId), d.heightMeters)); break;
+    case "motion": {
+      if (!d.actionSentence.trim()) throw new Error("Enter an action sentence before running Motion.");
+      getFalKey();
+      metadata = await runMotionJob({ directory, input: await local(inputId), data: d, progress, save: saveLocal,
+        video: async (reference, prompt, seed, prefix, submitted) => {
+          await generate(CHARACTER_ENDPOINTS.motionVideo, buildMotionVideoRequest(await url(reference), prompt, seed), prefix, submitted);
+          const video = assets.find((a) => a.name === prefix && a.kind === "video");
+          if (!video) throw new Error("Provider returned no video");
+          const path = join(directory, prefix.replace(/-video$/, ""), "video.mp4");
+          await copyFile((await asset(video.assetId)).localPath, path);
+          return { assetId: video.assetId, path };
+        } });
+      break;
+    }
     case "animate":
       if (request.inputRigEngine === "tripo") {
         if (!request.inputTripoRigTaskId) throw new Error("Tripo animation needs the upstream Tripo rig task ID. Run Rig again.");
@@ -225,7 +244,7 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
       for (const [i, clip] of request.animationAssetIds.entries()) await blender("retarget", { input: await local(assets.find((a) => a.kind === "glb" && /rigged_character/.test(a.name))?.assetId ?? inputId), clip: await local(clip) }, `custom-${i}`);
       break;
     case "export":
-      await blender("export", { inputs: await Promise.all(request.meshAssetIds.map(async (id, i) => ({ path: await local(id), name: `character-${i}` }))), target: d.target, characterName: d.characterName, triangleBudget: d.triangleBudget });
+      await blender("export", { inputs: await Promise.all(request.meshAssetIds.map(async (id, i) => ({ path: await local(id), name: (await asset(id)).kind === "glb" ? (inspectGlb(await readFile((await asset(id)).localPath)).clips[0]?.name ?? `character-${i}`).replace(/[^a-zA-Z0-9 ._-]/g, "_") : `character-${i}` }))), target: d.target, characterName: d.characterName, triangleBudget: d.triangleBudget });
       break;
   }
   // Quad providers may return only FBX. Make an actual GLB for downstream rigging/viewing.
@@ -240,7 +259,7 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
       await saveLocal({ name: "combined-glb", kind: "glb", path });
     }
   }
-  const glb = assets.find((a) => a.name === "combined-glb") ?? (kind === "animate" ? assets.find((a) => a.kind === "glb" && /animations|custom/.test(a.name) && !/basic_animations/.test(a.name)) : undefined) ?? assets.find((a) => a.kind === "glb" && /rigged|pbr|model_mesh|model-glb/.test(a.name)) ?? assets.find((a) => a.kind === "glb");
+  const glb = assets.find((a) => kind === "motion" && /^animations-motion-.*-glb$/.test(a.name)) ?? assets.find((a) => a.name === "combined-glb") ?? (kind === "animate" ? assets.find((a) => a.kind === "glb" && /animations|custom/.test(a.name) && !/basic_animations/.test(a.name)) : undefined) ?? assets.find((a) => a.kind === "glb" && /rigged|pbr|model_mesh|model-glb/.test(a.name)) ?? assets.find((a) => a.kind === "glb");
   if (glb) metadata = { ...metadata, ...inspectGlb(await readFile((await asset(glb.assetId)).localPath)) };
   if (kind !== "multiview" && !glb) throw new Error("Provider did not return a usable mesh.");
   if (kind === "multiview" && !assets.length) throw new Error("Provider did not return images.");

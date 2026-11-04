@@ -51,7 +51,7 @@ const workflowAssetSchema = z.object({
 
 const workflowNodeSchema = z.object({
   id: z.string().min(1).optional(),
-  type: z.enum(["image", "prompt", "vision", "video", "mesh", "viewer", "multiview", "bake", "rig", "animate", "animation", "export"]),
+  type: z.enum(["image", "prompt", "vision", "video", "mesh", "viewer", "multiview", "bake", "rig", "motion", "animate", "animation", "export"]),
   position: positionSchema.default({ x: 0, y: 0 }),
   asset: z.string().optional(),
   data: z.record(z.string(), z.unknown()).optional().default({}),
@@ -294,6 +294,7 @@ function createWorkflowNode(input: {
     case "multiview":
     case "bake":
     case "rig":
+    case "motion":
     case "animate":
     case "export":
       return { id: nodeId, type: definition.type, position, data: { ...createPipelineData(definition.type), ...definition.data } } as CarvingNode;
@@ -520,6 +521,7 @@ async function runNode(context: RunContext, node: CarvingNode) {
     case "multiview":
     case "bake":
     case "rig":
+    case "motion":
     case "animate":
     case "export":
       return runCharacterNode(context, node);
@@ -636,7 +638,7 @@ async function runVideoNode(context: RunContext, node: Extract<CarvingNode, { ty
   addOutput(context, node.id, "video", asset.id);
 }
 
-async function runCharacterNode(context: RunContext, node: Extract<CarvingNode, { type: "mesh" | "multiview" | "bake" | "rig" | "animate" | "export" }>) {
+async function runCharacterNode(context: RunContext, node: Extract<CarvingNode, { type: "mesh" | "multiview" | "bake" | "rig" | "motion" | "animate" | "export" }>) {
   const { startCharacterJob, characterJobStatus } = await import("@/lib/character/jobs");
   const job = await startCharacterJob(node.type, { projectId: context.projectId, nodeId: node.id, data: node.data, publicUrl: context.publicUrl, providerUrls: Object.fromEntries(context.providerUrlsByAssetId), ...characterInputs(node, context.graph.nodes, context.graph.edges) });
   node.data.activeJobId = job.jobId;

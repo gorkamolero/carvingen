@@ -12,7 +12,7 @@ import {
   VISION_MODEL_VALUES,
 } from "@/lib/fal/models";
 
-export const nodeTypeSchema = z.enum(["prompt", "image", "mesh", "viewer", "vision", "video", "multiview", "bake", "rig", "animate", "animation", "export"]);
+export const nodeTypeSchema = z.enum(["prompt", "image", "mesh", "viewer", "vision", "video", "multiview", "bake", "rig", "motion", "animate", "animation", "export"]);
 export const handleIdSchema = z.enum(["image-in", "image-out", "glb-in", "glb-out", "animation-in", "animation-out"]);
 
 const promptVersionSnapshotSchema = z.object({
@@ -151,8 +151,11 @@ export type MeshNode = Node<MeshNodeData, "mesh">;
 export type ViewerNode = Node<ViewerNodeData, "viewer">;
 export type VisionNode = Node<VisionNodeData, "vision">;
 
-export type PipelineNode = { [K in PipelineKind]: Node<PipelineData, K> }[PipelineKind];
-export type CarvingNode = PipelineNode | PromptNode | ImageNode | MeshNode | ViewerNode | VisionNode | VideoNode;
+// Motion has a dedicated component; the shared CharacterNode handles the other pipeline kinds.
+type SharedPipelineKind = Exclude<PipelineKind, "motion">;
+export type PipelineNode = { [K in SharedPipelineKind]: Node<PipelineData, K> }[SharedPipelineKind];
+export type MotionGraphNode = Node<PipelineData, "motion">;
+export type CarvingNode = MotionGraphNode | PipelineNode | PromptNode | ImageNode | MeshNode | ViewerNode | VisionNode | VideoNode;
 export type EdgeKind = "image" | "glb" | "animation";
 export type CarvingEdge = Edge<{ kind: EdgeKind }>;
 

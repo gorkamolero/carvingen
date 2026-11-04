@@ -51,3 +51,9 @@ next-env.d.ts
 # Blender local verification caches
 scripts/blender/__pycache__/
 .character-smoke/
+
+.venv-motion/
+scripts/motion/__pycache__/
+scripts/motion/tests/__pycache__/
+third_party/anymove/**/__pycache__/
+.next-verify/

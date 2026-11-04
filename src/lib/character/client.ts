@@ -19,7 +19,7 @@ export function characterInputs(node: CarvingNode, nodes: readonly CarvingNode[]
   }
   const meshAssetIds = incoming("glb-in").flatMap((n) => {
     if (!("outputAssetId" in n.data)) return [];
-    if (node.type === "export" && n.type === "animate") {
+    if (node.type === "export" && (n.type === "animate" || n.type === "motion")) {
       const clips = Object.entries(n.data.artifactAssetIds).filter(([key]) => /(?:animations|custom).*glb/.test(key) && !/basic_animations/.test(key)).map(([, id]) => id);
       if (clips.length) return clips;
     }
@@ -40,6 +40,7 @@ export function resultPatch(result: PipelineResult, previous: { outputAssetIds: 
   return { activeJobId: null, runStatus: null, errorMessage: null, inputsChangedSinceLastRun: false,
     outputAssetId: result.outputAssetId, outputAssetIds: [...previous.outputAssetIds, ...result.assets.map((a) => a.assetId)],
     artifactAssetIds, activeAssetId: artifactAssetIds.front ?? null,
+    motionReport: result.motion ?? null, lastRunCost: result.lastRunCost ?? null,
     rigEngine: result.rigEngine ?? null, tripoRigTaskId: result.tripoRigTaskId ?? null,
     triangleCount: result.triangleCount ?? null, boneNames: result.boneNames ?? [], budgetPass: result.budgetPass ?? null, rigTaskId: result.rigTaskId ?? null };
 }

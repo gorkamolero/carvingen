@@ -245,3 +245,7 @@ for Tripo (`preset:idle`, `walk`, `run`, `dive`, `climb`, `jump`, `slash`, `shoo
 Empty preset lists allow custom local clips. Tripo requires server `TRIPO_API_KEY` and
 bills Tripo credits, not fal: 30 credits per rig and 15 per clip including FBX conversion
 ($0.01/credit). [API details](tripo-api.md).
+
+| Node | Inputs / outputs |
+|---|---|
+| Motion (`motion`) | `glb-in` rig → `glb-out` custom clip; [CPU two-view method](MOTION.md) |

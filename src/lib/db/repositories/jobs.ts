@@ -85,7 +85,7 @@ export async function completeJob(input: {
       state: input.state,
       responseSummaryJson: input.responseSummary
         ? JSON.stringify(input.responseSummary)
-        : null,
+        : existing.responseSummaryJson,
       outputAssetIdsJson: input.outputAssetIds
         ? JSON.stringify(input.outputAssetIds)
         : null,
@@ -97,7 +97,7 @@ export async function completeJob(input: {
   return getJobById(input.id);
 }
 
-export async function updateJobProgress(id: string, progress: number, status: string) {
+export async function updateJobProgress(id: string, progress: number, status: string, partial: object = {}) {
   ensureDatabase();
-  await db.update(jobs).set({ state: "running", responseSummaryJson: JSON.stringify({ progress, status }) }).where(and(eq(jobs.id, id), inArray(jobs.state, ["queued", "running"])));
+  await db.update(jobs).set({ state: "running", responseSummaryJson: JSON.stringify({ progress, status, ...partial }) }).where(and(eq(jobs.id, id), inArray(jobs.state, ["queued", "running"])));
 }

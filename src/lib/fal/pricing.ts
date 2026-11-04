@@ -4,6 +4,7 @@ import { IMAGE_MODEL_CAPABILITIES } from "./models";
 import { viewPrompts } from "@/lib/character/fal";
 // Prices from each fal model page, checked 2026-11-03 (see docs/COSTS.md).
 export const CHARACTER_PRICES = {
+  motion: { unitPrice: 0.28, unit: "take (5 s, 768P)" },
   p2: { unitPrice: 1.1, unit: "model, standard textures" }, h31: { unitPrice: 0.3, unit: "model, standard textures" },
   remesh: { unitPrice: 0.01, unit: "unit" }, rig: { unitPrice: 0.2, unit: "request" },
   animate: { unitPrice: 0.2, unit: "request + $0.12 per clip" }, multiview: { unitPrice: 0.08, unit: "image" },
@@ -11,6 +12,7 @@ export const CHARACTER_PRICES = {
 } as const;
 export function estimateNodeCost(node: Pick<CarvingNode, "type" | "data">): { usd: number | null; label: string } {
   const d = node.data;
+  if (node.type === "motion" && "takeBudget" in d) { const usd = Math.round(d.takeBudget * 28) / 100; return { usd, label: `up to ~$${usd.toFixed(2)} · ${d.takeBudget} takes` }; }
   if ((node.type === "prompt" && "model" in d && d.model === "codex/gpt-image") || (node.type === "multiview" && "imageModel" in d && d.imageModel === "codex/gpt-image")) return { usd: 0, label: "$0 · Codex subscription" };
   if (node.type === "mesh" && "provider" in d) {
     if (d.provider.startsWith("tripo")) { const usd = tripoCost(d); return { usd, label: `~$${usd.toFixed(2)}` }; }

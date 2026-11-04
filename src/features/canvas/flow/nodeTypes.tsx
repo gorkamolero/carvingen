@@ -6,7 +6,10 @@ import { PromptNode } from "@/features/canvas/nodes/PromptNode";
 import { VisionNode } from "@/features/canvas/nodes/VisionNode";
 import { ViewerNode } from "@/features/canvas/nodes/ViewerNode";
 
+import { MotionNode } from "@/features/canvas/nodes/MotionNode";
+
 export const nodeTypes = {
+  motion: MotionNode,
   multiview: CharacterNode,
   bake: CharacterNode,
   rig: CharacterNode,

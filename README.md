@@ -14,7 +14,7 @@ The first pieces were made by hand: prompts in a chat, images saved in folders, 
 
 ## What is in it
 
-- **Nodes:** Image, Prompt, Vision, Video, Mesh, Multi-view, Bake, Rig, Animate, Animation upload, Engine export and Viewer. Up to 14 reference images on Nano Banana 2. Every run stays in the node's history. Undo and redo cover every change to the graph.
+- **Nodes:** Image, Prompt, Vision, Video, Mesh, Multi-view, Bake, Rig, Animate, Motion, Animation upload, Engine export and Viewer. Up to 14 reference images on Nano Banana 2. Every run stays in the node's history. Undo and redo cover every change to the graph.
 - **Models:** GPT Image · Codex subscription locally; through [fal](https://fal.ai): Flux Kontext Pro, Nano Banana 2 and Pro, GPT Image 2, Veo 3.1, Seedance, Meshy v6, Hunyuan 3D, Tripo P2 and H3.1.
 - **3D:** GLB, FBX, USDZ, OBJ and STL downloads, and a model viewer.
 - **Scripts:** run a whole canvas from JSON (`pnpm workflow`), and batch characters through multi-view, Meshy rigging and animation, and packing for games (`pnpm characters`, `pnpm character:pack`). See [`docs/WORKFLOW_JSON.md`](docs/WORKFLOW_JSON.md).
@@ -74,7 +74,8 @@ The canvas also takes one character image all the way to rigged, animated FBX fi
 3. **Bake** brings it down to a triangle budget in local Blender and bakes the colour onto the low-poly mesh. Tripo remesh is the other engine.
 4. **Rig** adds a humanoid skeleton through Meshy, with Mixamo-style bone names.
 5. **Animate** applies presets from Meshy's library of 656 clips in one call, and retargets your own FBX, BVH or GLB clips in Blender.
-6. **Engine export** renames the bones for Unity Humanoid or Unreal UE5, checks the triangle budget, and writes one FBX per clip plus a manifest.
+6. **Motion** makes a custom clip from one AI two-view video, with CPU human-joint reading and strict gates. Connect Rig → Motion → Export. See [Motion](docs/MOTION.md); up to $1.68 for six takes.
+7. **Engine export** renames the bones for Unity Humanoid or Unreal UE5, checks the triangle budget, and writes one FBX per clip plus a manifest.
 
 The Viewer plays the clips. One character costs about $2.22 on fal; Blender steps are free. Blender 5 must be installed (`BLENDER_PATH`, default `/opt/homebrew/bin/blender`).
 
@@ -93,3 +94,7 @@ Rig also supports Tripo's native v3 humanoid rigging with Mixamo naming, alongsi
 Meshy default. Animate automatically offers Tripo presets for a Tripo rig. Set the server
 `TRIPO_API_KEY`; this bills Tripo credits, not fal (30 credits/$0.30 per GLB+FBX rig,
 15 credits/$0.15 per clip, including conversion). See [Tripo API notes](docs/tripo-api.md).
+
+## Credits
+
+Motion includes unmodified Apache-2.0 code from [Patch-gg/anymove](https://github.com/Patch-gg/anymove), pinned with source hashes in [NOTICE](third_party/anymove/NOTICE).

@@ -36,3 +36,16 @@ Every paid fal call made while building and verifying the character pipeline. Pr
 **Total: $4.72 at the model-page prices, $6.92 if fal bills the $0.80 rigging rate for all three rigging calls.** Both are under the $10 test budget.
 
 One full character on the final code: reference image $0.08, five multi-view images $0.40, Tripo P2 $1.10, Blender bake $0, rig $0.20, two clips $0.44, export $0. About **$2.22**.
+
+| Node | Price |
+|---|---|
+| Motion | $0.28 per five-second 768P take; six-take default up to $1.68; first passing take stops |
+
+## Motion verification runs
+
+| Time | Call | Result | Cost |
+|---|---|---|---|
+| 3 Nov 21:16 | minimax/h3-max/image-to-video ×6, Paddle (prone) | all six takes rejected at the gates | $1.68 |
+| 4 Nov 12:30 | minimax/h3-max/image-to-video ×1, Pump (low stance) | take 1 passed every gate; Engine export of the clip $0 | $0.28 |
+
+**Motion total: $1.96.** See [MOTION.md](MOTION.md) for the gate numbers.
