@@ -1,7 +1,8 @@
 import { TRIPO_PRESET_IDS } from "@/lib/tripo/presets";
+import { motionReportSchema } from "./motion";
 import { z } from "zod";
 
-export const PIPELINE_KINDS = ["multiview", "bake", "rig", "animate", "animation", "export"] as const;
+export const PIPELINE_KINDS = ["multiview", "bake", "rig", "motion", "animate", "animation", "export"] as const;
 export type PipelineKind = typeof PIPELINE_KINDS[number];
 export const pipelineDataSchema = z.object({
   activeJobId: z.string().nullable().default(null),
@@ -25,6 +26,16 @@ export const pipelineDataSchema = z.object({
   turnDegrees: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]).default(0),
   textureSize: z.union([z.literal(1024), z.literal(2048), z.literal(4096)]).default(2048),
   quad: z.boolean().default(false),
+  moveName: z.string().min(1).max(40).default("Paddle"),
+  firstPose: z.enum(["standing", "low", "high", "prone"]).default("standing"),
+  actionSentence: z.string().max(600).default(""),
+  planted: z.enum(["feet", "hands", "body"]).default("feet"),
+  subjectDescription: z.string().max(300).default("a stylised game character, exactly the rendered proportions and painted textures"),
+  clipSeconds: z.number().min(3).max(4).default(3.5),
+  takeBudget: z.number().int().min(1).max(12).default(6),
+  seedBase: z.number().int().nullable().default(null),
+  motionReport: motionReportSchema.nullable().default(null),
+  lastRunCost: z.number().nullable().default(null),
   heightMeters: z.number().positive().max(100).default(1.8),
   presetIds: z.array(z.number().int().min(0).max(696)).max(10).default([0, 669]),
   characterName: z.string().min(1).max(120).default("Character"),

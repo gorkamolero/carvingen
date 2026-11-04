@@ -1,0 +1,10 @@
+Files from https://github.com/Patch-gg/anymove at commit c3cb22c264910556cf358c529e0cd2ea76b331f8, Apache-2.0, unmodified.
+The prompt template, two-camera layout contract, triangulation, paw-height agreement and bounded torch fitter are theirs. The joint reader (rtmlib) and Blender posing, rendering, checks and export are Carvingen's.
+
+SHA256
+cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  LICENSE
+53f24821c181dafd05d9f0829e0de1acb5d4c6d81edd92f9f229e080dbc11ff0  tools/make_prompt.py
+c484756fbc95da2510351aeb74448d7fe081d5d0505b53100cc126b59a571924  tools/compose_ref.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  mocap/__init__.py
+aa8a156167684fbc6519cca060f7445f83ea605372d747b3b365d88501b3c6c0  mocap/layout.py
+ab51ad838e53c4c827a83d997195a1225d0444bc3fe242415db75442f8f6203f  mocap/solve.py

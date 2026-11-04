@@ -18,6 +18,7 @@ import {
 const nodeSchema = z.discriminatedUnion("type", [
   z.object({ id: z.string(), type: z.literal("multiview"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
   z.object({ id: z.string(), type: z.literal("bake"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
+  z.object({ id: z.string(), type: z.literal("motion"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
   z.object({ id: z.string(), type: z.literal("rig"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
   z.object({ id: z.string(), type: z.literal("animate"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
   z.object({ id: z.string(), type: z.literal("animation"), position: z.object({ x: z.number(), y: z.number() }), data: pipelineDataSchema }),
@@ -84,6 +85,7 @@ export function parseNodeData(type: z.infer<typeof nodeTypeSchema>, dataJson: st
     case "multiview":
     case "bake":
     case "rig":
+    case "motion":
     case "animate":
     case "animation":
     case "export":

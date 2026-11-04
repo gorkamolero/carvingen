@@ -2,6 +2,7 @@ import { z } from "zod";
 import { tripoOptionsSchema } from "./schema";
 
 export const CHARACTER_ENDPOINTS = {
+  motionVideo: "minimax/h3-max/image-to-video",
   p2: "tripo3d/p2/image-to-3d",
   h31: "tripo3d/h3.1/image-to-3d",
   h31Multiview: "tripo3d/h3.1/multiview-to-3d",
@@ -94,4 +95,10 @@ export function extractCharacterArtifacts(data: unknown): RemoteArtifact[] {
     if (kind && !out.some((a) => a.sourceUrl === url)) out.push({ name, kind, sourceUrl: url });
   }
   walk(data, []); return out;
+}
+
+export function buildMotionVideoRequest(imageUrl: string, prompt: string, seed: number) {
+  z.url().refine((v) => new URL(v).protocol === "https:").parse(imageUrl);
+  z.string().trim().min(1).parse(prompt); z.number().int().parse(seed);
+  return { prompt, image_url: imageUrl, duration: 5, resolution: "768P", seed, prompt_expansion_mode: "disabled" };
 }

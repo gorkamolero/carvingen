@@ -12,6 +12,7 @@ The canvas and workflow runner share the same server-managed job executor. No de
 | Bake | Blender `bake.py` or `tripo3d/tripo/remesh` | Blender: GLB, FBX, base-color PNG, actual triangle count. Tripo: returned artifacts, local GLB conversion if needed |
 | Rig | `fal-ai/meshy/rigging` | GLB, FBX, basic animations, actual GLB joint names/count, rig task ID |
 | Animate | `fal-ai/meshy/rigging/multi-animation`; custom inputs use Blender `retarget.py` | Per-clip files, combined animation GLB, ZIP |
+| Motion | `minimax/h3-max/image-to-video`, CPU rtmlib/anymove, local Blender | One verified native-scale clip and per-take diagnostic assets; [method and gates](MOTION.md) |
 | Animation | `/api/assets/upload` | Validated FBX/BVH/GLB upload; no generation |
 | Engine export | Blender `export.py` | GLB/FBX set, manifest, ZIP, actual budget pass/fail |
 | Viewer | model-viewer | Clip dropdown and play/pause when GLB contains animations |
@@ -71,6 +72,8 @@ Files made locally, such as Bake outputs, are uploaded to fal storage under thei
 Unit tests cover payloads, limits, artifact extraction, graph connection rules, front-view selection, dry-run planning, append-only history, progress parsing, bone maps, ZIP structure, pricing, private-URL detection and clip naming. Provider generation is mocked.
 
 A real run on 3 November 2026 took one generated character through the whole chain on fal and local Blender: Tripo P2 returned 31,702 triangles, the Blender bake brought it to 12,000 with a 2048 texture, Meshy rigged it with 24 bones, and Animate added Idle (4.0 s) and Casual_Walk (4.2 s). Engine export (Unity) wrote `Idle.fbx` and `Casual_Walk.fbx`. Loading each FBX headless in Blender showed one skinned armature, 24 bones with Unity names (Hips → Spine → Chest → UpperChest → Neck), 12,000 triangles and exactly one clip per file (97 and 100 frames). Each result was opened in a Viewer on the canvas, and the Animate Viewer switches between both clips. The canvas is in [`images/character-atlas-canvas.png`](images/character-atlas-canvas.png).
+
+Motion was verified on 4 November 2026 on the same project's Tripo rig: a low-stance pump passed every gate on its first $0.28 take and Engine export wrote the clip for Unity. The run and the earlier prone paddle that the gates rejected are in [MOTION.md](MOTION.md#verified-runs).
 
 ### GPT Image · Codex subscription
 

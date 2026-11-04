@@ -246,6 +246,10 @@ Empty preset lists allow custom local clips. Tripo requires server `TRIPO_API_KE
 bills Tripo credits, not fal: 30 credits per rig and 15 per clip including FBX conversion
 ($0.01/credit). [API details](tripo-api.md).
 
+| Node | Inputs / outputs |
+|---|---|
+| Motion (`motion`) | `glb-in` rig → `glb-out` custom clip; [CPU two-view method](MOTION.md) |
+
 ### Capture controls
 
 - Viewer **Save still** saves a 2× PNG asset to capture history and downloads it.

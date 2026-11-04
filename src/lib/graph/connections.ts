@@ -30,6 +30,7 @@ export const NODE_HANDLES: Record<string, { inputs: string[]; outputs: string[] 
   vision: { inputs: ["image-in"], outputs: [] }, video: { inputs: ["image-in"], outputs: [] },
   mesh: { inputs: ["image-in"], outputs: ["glb-out"] }, multiview: { inputs: ["image-in"], outputs: ["image-out"] },
   bake: { inputs: ["glb-in"], outputs: ["glb-out"] }, rig: { inputs: ["glb-in"], outputs: ["glb-out"] },
+  motion: { inputs: ["glb-in"], outputs: ["glb-out"] },
   animate: { inputs: ["glb-in", "animation-in"], outputs: ["glb-out"] },
   animation: { inputs: [], outputs: ["animation-out"] }, export: { inputs: ["glb-in"], outputs: ["glb-out"] },
   viewer: { inputs: ["glb-in"], outputs: [] },

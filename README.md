@@ -14,7 +14,7 @@ The first pieces were made by hand: prompts in a chat, images saved in folders, 
 
 ## What is in it
 
-- **Nodes:** Image, Prompt, Vision, Video, Mesh, Multi-view, Bake, Rig, Animate, Animation upload, Engine export and Viewer. Up to 14 reference images on Nano Banana 2. Every run stays in the node's history. Undo and redo cover every change to the graph.
+- **Nodes:** Image, Prompt, Vision, Video, Mesh, Multi-view, Bake, Rig, Animate, Motion, Animation upload, Engine export and Viewer. Up to 14 reference images on Nano Banana 2. Every run stays in the node's history. Undo and redo cover every change to the graph.
 - **Models:** GPT Image · Codex subscription locally; through [fal](https://fal.ai): Flux Kontext Pro, Nano Banana 2 and Pro, GPT Image 2, Veo 3.1, Seedance, Meshy v6, Hunyuan 3D, Tripo P2 and H3.1.
 - **3D:** GLB, FBX, USDZ, OBJ and STL downloads, and a model viewer.
 - **Scripts:** run a whole canvas from JSON (`pnpm workflow`), and batch characters through multi-view, Meshy rigging and animation, and packing for games (`pnpm characters`, `pnpm character:pack`). See [`docs/WORKFLOW_JSON.md`](docs/WORKFLOW_JSON.md).
@@ -74,7 +74,8 @@ The canvas also takes one character image all the way to rigged, animated FBX fi
 3. **Bake** brings it down to a triangle budget in local Blender and bakes the colour onto the low-poly mesh. Tripo remesh is the other engine.
 4. **Rig** adds a humanoid skeleton through Meshy, with Mixamo-style bone names.
 5. **Animate** applies presets from Meshy's library of 656 clips in one call, and retargets your own FBX, BVH or GLB clips in Blender.
-6. **Engine export** renames the bones for Unity Humanoid or Unreal UE5, checks the triangle budget, and writes one FBX per clip plus a manifest.
+6. **Motion** makes a custom clip from one AI two-view video, with CPU human-joint reading and strict gates. Connect Rig → Motion → Export. See [Motion](docs/MOTION.md); up to $1.68 for six takes.
+7. **Engine export** renames the bones for Unity Humanoid or Unreal UE5, checks the triangle budget, and writes one FBX per clip plus a manifest.
 
 The Viewer plays the clips. One character costs about $2.22 on fal; Blender steps are free. Blender 5 must be installed (`BLENDER_PATH`, default `/opt/homebrew/bin/blender`).
 
@@ -109,3 +110,7 @@ Requires Playwright Chromium (`pnpm exec playwright install chromium`) and `ffmp
 Viewer **Save still** renders at twice the displayed size. **Record** records the current clip for 10 seconds using browser MediaRecorder. Both upload a reusable asset, add it to the Viewer's capture history, and download it. The server converts WebM to MP4 when ffmpeg succeeds and preserves WebM with a visible message otherwise. Native canvas stills retain transparency; canvas recordings have a black background after MP4 conversion. These buttons save through the editor's usual project autosave. **Export canvas** in the top bar runs Playwright on the server and downloads a PNG of the saved project. **Save sheet** on Multi-view downloads its input and generated views using the same sharp renderer as the CLI.
 
 Notes match current output asset IDs to successful jobs, use generation-time settings and the existing pricing estimator, and exclude historical attempts. Tripo credits use $0.01 per credit when recorded. Estimated costs are marked. Missing job metadata stays explicitly unavailable. New animation results include the maximum sampler keyframe count as `frameCount` (sampled keyframes, independent of playback frame rate). For legacy results, capture inspects the current GLB and labels the sampler-count source explicitly. Counts stay unavailable when neither source exists.
+
+## Credits
+
+Motion includes unmodified Apache-2.0 code from [Patch-gg/anymove](https://github.com/Patch-gg/anymove), pinned with source hashes in [NOTICE](third_party/anymove/NOTICE).
