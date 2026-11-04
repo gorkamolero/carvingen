@@ -103,6 +103,7 @@ export const meshNodeDataSchema = z.object({
 });
 
 export const viewerNodeDataSchema = z.object({
+  captureAssetIds: z.array(z.string()).optional(),
   autoRotate: z.boolean(),
   exposure: z.number(),
   collapsed: z.boolean().optional().default(false),

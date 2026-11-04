@@ -23,7 +23,8 @@
     "characters": "tsx scripts/characters.ts",
     "character:pack": "tsx scripts/character-pack.ts",
     "character:views": "tsx scripts/character-views.ts",
-    "meshy:animate": "tsx scripts/meshy-animate.ts"
+    "meshy:animate": "tsx scripts/meshy-animate.ts",
+    "capture": "tsx scripts/capture.ts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.9.6",

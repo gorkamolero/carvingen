@@ -14,5 +14,5 @@ export function inspectGlb(buffer: Buffer) {
     return n + ((p.mode ?? 4) === 4 ? Math.floor(count / 3) : [5, 6].includes(p.mode ?? 4) ? Math.max(0, count - 2) : 0);
   }, 0), 0);
   return { triangleCount, boneNames: joints.map((j) => gltf.nodes?.[j]?.name ?? `joint-${j}`),
-    clips: (gltf.animations ?? []).map((a, i) => ({ name: a.name ?? `Clip ${i + 1}`, duration: Math.max(0, ...a.samplers.map((s) => gltf.accessors?.[s.input]?.max?.[0] ?? 0)) })) };
+    clips: (gltf.animations ?? []).map((a, i) => ({ name: a.name ?? `Clip ${i + 1}`, frameCount: Math.max(0, ...a.samplers.map((s) => gltf.accessors?.[s.input]?.count ?? 0)), duration: Math.max(0, ...a.samplers.map((s) => gltf.accessors?.[s.input]?.max?.[0] ?? 0)) })) };
 }
