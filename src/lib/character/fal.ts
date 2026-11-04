@@ -50,7 +50,7 @@ export { ANIMATION_PRESETS } from "./animation-library";
 const VIEW_ANGLE: Record<string, string> = {
   front: "The whole body faces the camera.",
   // Image models reliably draw a profile facing screen left, which is the character's right side.
-  // The Mesh job mirrors it into Tripo's "left" slot (Tripo order: front, left, back, right).
+  // The Mesh job sends it as is in Tripo's "left" slot (Tripo order: front, left, back, right), which wants that profile.
   right: "Strict 90-degree side profile of the character's right side: rotate the whole body, hips, shoulders, feet and head together so the character faces screen left; only one eye is visible and the arms extend toward and away from the camera.",
   back: "The whole body faces away from the camera; the face is not visible.",
 };

@@ -4,7 +4,7 @@ import { mkdir, writeFile, rm } from "node:fs/promises";
 import { resolve, join } from "node:path";
 const state = vi.hoisted(() => ({ root: "", glb: "", calls: [] as unknown[], rows: new Map<string, { id: string; sourceUrl: string; url: string; localPath: string; mimeType: string; kind: string; originalFileName: string }>() }));
 vi.mock("@/lib/db/repositories/jobs", () => ({ updateJobProgress: vi.fn(), createJob: vi.fn(), completeJob: vi.fn(), getJobById: vi.fn() }));
-vi.mock("@/lib/db/repositories/assets", () => ({ getAssetById: vi.fn(async (id: string) => state.rows.get(id)), createAssetRecord: vi.fn() }));
+vi.mock("@/lib/db/repositories/assets", () => ({ getAssetById: vi.fn(async (id: string) => state.rows.get(id)), getAssetBySha: vi.fn(async () => undefined), createAssetRecord: vi.fn(async (input) => ({ ...input, id: `saved-${input.sha256}` })) }));
 vi.mock("@/lib/env", () => ({ getServerEnv: () => ({ ASSET_STORAGE_PATH: state.root }), getFalKey: () => "unit-test-placeholder" }));
 vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), queue: {
   submit: vi.fn(async (slug, options) => { state.calls.push({ slug, ...options }); return { request_id: "mock-request" }; }),
@@ -14,6 +14,11 @@ vi.mock("@fal-ai/client", () => ({ fal: { config: vi.fn(), queue: {
 vi.mock("@/lib/storage/persist-remote", () => ({ persistRemoteAsset: vi.fn(async ({ kind }: { kind: string }) => {
   const id = `output-${kind}`; const row = { id, localPath: state.glb, kind, mimeType: "model/gltf-binary", sourceUrl: `https://fal.media/rig.${kind}`, url: "", originalFileName: `rig.${kind}` }; state.rows.set(id, row); return row;
 }) }));
+vi.mock("@/lib/codex/image", () => ({ generateCodexImage: vi.fn(async ({ workDir }) => {
+  await mkdir(workDir, { recursive: true }); const path = join(workDir, "output.png");
+  await writeFile(path, "mock-image"); return path;
+}) }));
+import { generateCodexImage } from "@/lib/codex/image";
 import { executeCharacterJob } from "@/lib/character/jobs";
 afterAll(async () => { if (state.root) await rm(state.root, { recursive: true, force: true }); });
 describe("mocked character job execution", () => {
@@ -30,4 +35,15 @@ describe("mocked character job execution", () => {
     expect(result.boneNames).toEqual(["mixamorig:Hips"]);
     expect(result.rigTaskId).toBe("rig-task");
   });
+  it("selects Codex for each view and cutout without calling fal", async () => {
+    state.root = resolve("tmp/unit-character-job");
+    state.rows.set("image", { id: "image", sourceUrl: "", url: "", localPath: join(state.root, "input.png"), mimeType: "image/png", kind: "image", originalFileName: "input.png" });
+    state.calls.length = 0;
+    const result = await executeCharacterJob("multiview", { projectId: "p", nodeId: "n", data: { imageModel: "codex/gpt-image", includeBack: true, equipment: "shield" }, meshAssetIds: [], imageAssetIds: ["image"], animationAssetIds: [] }, "views");
+    expect(state.calls).toEqual([]);
+    expect(generateCodexImage).toHaveBeenCalledTimes(4);
+    expect(vi.mocked(generateCodexImage).mock.calls[0][0]).toMatchObject({ aspectRatio: "3:4", referencePaths: [join(state.root, "input.png")] });
+    expect(result.assets.map((a) => [a.name, a.kind])).toEqual([["front", "image"], ["right", "image"], ["back", "image"], ["equipment-shield", "image"]]);
+  });
+
 });

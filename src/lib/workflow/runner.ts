@@ -526,6 +526,26 @@ async function runNode(context: RunContext, node: CarvingNode) {
 }
 
 async function runPromptNode(context: RunContext, node: Extract<CarvingNode, { type: "prompt" }>) {
+  if (node.data.model === "codex/gpt-image") {
+    const { startCodexJob } = await import("@/lib/codex/jobs");
+    const { characterJobStatus } = await import("@/lib/character/jobs");
+    const { getIncomingImageAssetIds } = await import("@/lib/graph/selectors");
+    const { saveProjectGraph } = await import("@/lib/db/repositories/projects");
+    const job = await startCodexJob({ projectId: context.projectId, nodeId: node.id, provider: "local", providerSlug: node.data.model, requestInput: { prompt: node.data.text, aspectRatio: node.data.aspectRatio, referenceAssetIds: getIncomingImageAssetIds(node.id, context.graph.nodes, context.graph.edges).slice(0, 10) } });
+    node.data.activeJobId = job.jobId;
+    await saveProjectGraph(context.graph);
+    while (true) {
+      const status = await characterJobStatus(job.jobId);
+      if (status.state === "failed") { node.data.activeJobId = null; node.data.errorMessage = status.error; await saveProjectGraph(context.graph); throw new Error(status.error ?? "Codex failed"); }
+      if (status.state === "succeeded") {
+        const assetId = status.result.outputAssetId as string;
+        node.data.outputAssetIds.push(assetId); node.data.activeAssetId = assetId;
+        node.data.activeJobId = null; node.data.runStatus = null; node.data.errorMessage = null; node.data.inputsChangedSinceLastRun = false;
+        context.nodesRun.push(node.id); addOutput(context, node.id, "image", assetId); return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
   const { persistRemoteAsset } = await import("@/lib/storage/persist-remote");
   const { completeJob } = await import("@/lib/db/repositories/jobs");
   const referenceImages = getIncomingImageUrlsForNode(context, node.id);

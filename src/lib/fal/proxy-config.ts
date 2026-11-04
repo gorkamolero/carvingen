@@ -20,7 +20,7 @@ const VIDEO_ENDPOINTS = [
   "fal-ai/veo3.1/fast/reference-to-video",
 ] as const;
 
-const IMAGE_ENDPOINTS = IMAGE_MODEL_BASES.flatMap((model) => [model, `${model}/edit`]);
+const IMAGE_ENDPOINTS = IMAGE_MODEL_BASES.filter((model) => model !== "codex/gpt-image").flatMap((model) => [model, `${model}/edit`]);
 
 export const FAL_ALLOWED_ENDPOINTS = [
   ...Object.values(CHARACTER_ENDPOINTS),

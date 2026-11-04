@@ -1,8 +1,9 @@
+import { generateCodexImage } from "@/lib/codex/image";
+import { reconcileCodexJob } from "@/lib/codex/jobs";
 import { combineAnimationGlbs } from "./pack";
 import { fal } from "@fal-ai/client";
 import { readFile, mkdir, writeFile, copyFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import sharp from "sharp";
 import { ANIMATION_PRESETS } from "./animation-library";
 import { basename, join, resolve } from "node:path";
 import { z } from "zod";
@@ -51,6 +52,7 @@ export async function startCharacterJob(kind: RunnableKind, raw: unknown) {
   return job;
 }
 export async function characterJobStatus(id: string) {
+  await reconcileCodexJob(id);
   let job = await getJobById(id);
   if (!job) throw new Error("Job not found.");
   if (job.providerSlug.startsWith("character/") && ["queued", "running"].includes(job.state) && !active.has(id)) {
@@ -85,24 +87,18 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
     uploaded.set(id, stored);
     return stored;
   }
-  /** Tripo multi-view wants [front, left, back, right]; a missing side is the other side mirrored. */
+  /**
+   * Tripo multi-view slots are [front, left, back, right]. Verified in real runs: Tripo's "left" slot wants the
+   * profile facing screen left, which is the character's right side (Multi-view's "right" view). A mirrored
+   * profile there leaves a ghost face on the back of the head, so nothing is mirrored.
+   */
   async function tripoViewUrls(names: string[], ids: string[]) {
     const byName = new Map(names.map((n, i) => [n, ids[i]]));
     const front = byName.get("front");
     if (!front) throw new Error("Tripo multi-view needs a front view.");
-    const side = async (name: "left" | "right", other: "left" | "right") => {
-      const own = byName.get(name);
-      if (own) return url(own);
-      const source = byName.get(other);
-      if (!source) return null;
-      fal.config({ credentials: getFalKey() });
-      const mirrored = await sharp(await readFile((await asset(source)).localPath)).flop().png().toBuffer();
-      return fal.storage.upload(new File([new Uint8Array(mirrored)], `${source}-mirrored-${name}.png`, { type: "image/png" }));
-    };
-    const left = await side("left", "right"), right = await side("right", "left");
-    const back = byName.get("back");
-    if (!left) return [await url(front)];
-    return [await url(front), left, ...(back ? [await url(back)] : []), ...(back && right ? [right] : [])];
+    const facingScreenLeft = byName.get("right"), facingScreenRight = byName.get("left"), back = byName.get("back");
+    if (!facingScreenLeft) return [await url(front)];
+    return [await url(front), await url(facingScreenLeft), ...(back ? [await url(back)] : []), ...(back && facingScreenRight ? [await url(facingScreenRight)] : [])];
   }
   async function local(id: string) {
     const a = await asset(id);
@@ -113,7 +109,7 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
   async function saveLocal(file: BlenderResult["files"][number]) {
     if (!resolve(file.path).startsWith(resolve(directory) + "/")) throw new Error("Blender returned a path outside its output directory.");
     const buffer = await readFile(file.path);
-    const mime = ({ glb: "model/gltf-binary", fbx: "application/octet-stream", texture: "image/png", manifest: "application/json", zip: "application/zip" } as Record<string, string>)[file.kind] ?? "application/octet-stream";
+    const mime = ({ image: "image/png", glb: "model/gltf-binary", fbx: "application/octet-stream", texture: "image/png", manifest: "application/json", zip: "application/zip" } as Record<string, string>)[file.kind] ?? "application/octet-stream";
     const hash = sha256(buffer);
     // A rerun can produce a byte-identical file (same clip, same settings); reuse that asset.
     const saved = (await getAssetBySha(hash, buffer.length)) ?? await createAssetRecord({ jobId, kind: file.kind, mimeType: mime, localPath: file.path, sha256: hash, bytes: buffer.length, originalFileName: basename(file.path) });
@@ -160,9 +156,17 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
       await generate(pickMeshSlug(mesh.mode, mesh.provider, mesh), buildMeshRequest({ ...mesh, imageUrls: images }));
       break;
     }
-    case "multiview":
-      for (const view of viewPrompts(d.includeBack, d.equipment)) await generate(CHARACTER_ENDPOINTS.multiview, { prompt: view.prompt, image_urls: [await url(request.imageAssetIds[0])], aspect_ratio: "3:4", resolution: "1K", num_images: 1 }, view.name);
+    case "multiview": {
+      const views = viewPrompts(d.includeBack, d.equipment);
+      for (const [index, view] of views.entries()) {
+        if (d.imageModel === "codex/gpt-image") {
+          await progress(Math.round(index / views.length * 90), `Codex image ${index + 1}/${views.length}: ${view.name}`);
+          const path = await generateCodexImage({ prompt: view.prompt, referencePaths: [(await asset(request.imageAssetIds[0])).localPath], aspectRatio: "3:4", workDir: join(directory, `view-${index}`) });
+          await saveLocal({ name: view.name, kind: "image", path });
+        } else await generate(CHARACTER_ENDPOINTS.multiview, { prompt: view.prompt, image_urls: [await url(request.imageAssetIds[0])], aspect_ratio: "3:4", resolution: "1K", num_images: 1 }, view.name);
+      }
       break;
+    }
     case "bake":
       if (d.engine === "tripo") await generate(CHARACTER_ENDPOINTS.remesh, buildRemeshRequest(await url(inputId), d.targetTriangles, d.quad));
       else await blender("bake", { input: await local(inputId), targetTriangles: d.targetTriangles, keepUvs: d.keepUvs, textureSize: d.textureSize, turnDegrees: d.turnDegrees });

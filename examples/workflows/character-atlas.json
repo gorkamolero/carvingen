@@ -8,7 +8,7 @@
       "type": "prompt",
       "data": {
         "text": "Stylized adventurous game character, full body, simple fitted tunic, boots, leather belt, expressive face, plain white background, neutral standing pose, no weapons in hands",
-        "model": "fal-ai/nano-banana-2",
+        "model": "codex/gpt-image",
         "aspectRatio": "3:4"
       },
       "run": true,
@@ -22,7 +22,8 @@
       "type": "multiview",
       "data": {
         "includeBack": true,
-        "equipment": "sword, shield"
+        "equipment": "sword, shield",
+        "imageModel": "codex/gpt-image"
       },
       "run": true,
       "position": {

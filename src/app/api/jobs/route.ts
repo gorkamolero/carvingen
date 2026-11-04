@@ -1,3 +1,4 @@
+import { codexJobSchema, startCodexJob } from "@/lib/codex/jobs";
 import { z } from "zod";
 
 import {
@@ -35,7 +36,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = createJobSchema.parse(await parseJson(request));
+    const raw = await parseJson(request);
+    if (raw && typeof raw === "object" && "providerSlug" in raw && raw.providerSlug === "codex/gpt-image") return jsonOk(await startCodexJob(codexJobSchema.parse(raw)), { status: 201 });
+    const body = createJobSchema.parse(raw);
     return jsonOk(await createJob(body), { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

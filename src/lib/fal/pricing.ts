@@ -10,6 +10,7 @@ export const CHARACTER_PRICES = {
 } as const;
 export function estimateNodeCost(node: Pick<CarvingNode, "type" | "data">): { usd: number | null; label: string } {
   const d = node.data;
+  if ((node.type === "prompt" && "model" in d && d.model === "codex/gpt-image") || (node.type === "multiview" && "imageModel" in d && d.imageModel === "codex/gpt-image")) return { usd: 0, label: "$0 · Codex subscription" };
   if (node.type === "mesh" && "provider" in d) {
     if (d.provider.startsWith("tripo")) { const usd = tripoCost(d); return { usd, label: `~$${usd.toFixed(2)}` }; }
     return { usd: null, label: "provider pricing varies" };

@@ -2,7 +2,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { fal } from "@fal-ai/client";
 import { useSnapshot } from "valtio";
 
@@ -99,6 +100,21 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
         throw new Error("No active project.");
       }
 
+      if (data.model === "codex/gpt-image") {
+        const job = await fetchJson<{ jobId: string }>("/api/jobs", { method: "POST", body: JSON.stringify({ projectId: graph.activeProjectId, nodeId: id, provider: "local", providerSlug: data.model, requestInput: { prompt: data.text, aspectRatio: data.aspectRatio, referenceAssetIds: referenceAssetIds.slice(0, 10) } }) });
+        updatePromptNode(id, { activeJobId: job.jobId, runStatus: "Waiting for Codex", errorMessage: null });
+        markNodeDirty(id);
+        while (true) {
+          const status = await fetchJson<import("@/lib/character/client").CharacterJobStatus>(`/api/jobs/${job.jobId}`);
+          if (status.state === "failed") throw new Error(status.error ?? "Codex image failed.");
+          if (status.state === "succeeded") {
+            if (!status.result?.outputAssetId) throw new Error("Codex returned no image asset.");
+            return status.result.outputAssetId;
+          }
+          updatePromptNode(id, { runStatus: status.result?.status ?? "Waiting for Codex" });
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      }
       // Cap the reference list to the model's ceiling. Chain-through can
       // surface more images than e.g. Flux Kontext's 1 — sending past the
       // cap gets a 422 from fal.
@@ -244,9 +260,29 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
     },
   });
 
+  const recovery = useQuery({
+    queryKey: ["codex-prompt-job", data.activeJobId],
+    queryFn: () => fetchJson<import("@/lib/character/client").CharacterJobStatus>(`/api/jobs/${data.activeJobId}`),
+    enabled: !!data.activeJobId && data.model === "codex/gpt-image" && !runMutation.isPending,
+    refetchInterval: 2000,
+  });
+  useEffect(() => {
+    if (runMutation.isPending || !data.activeJobId || !recovery.data) return;
+    const status = recovery.data;
+    if (status.state === "succeeded" && status.result?.outputAssetId) {
+      const assetId = status.result.outputAssetId;
+      updatePromptNode(id, { activeJobId: null, activeAssetId: assetId, outputAssetIds: [...new Set([...data.outputAssetIds, assetId])], runStatus: null, errorMessage: null, inputsChangedSinceLastRun: false });
+      markNodeDirty(id);
+    } else if (status.state === "failed") {
+      updatePromptNode(id, { activeJobId: null, runStatus: "FAILED", errorMessage: status.error });
+      markNodeDirty(id);
+    }
+  }, [data.activeJobId, data.outputAssetIds, id, recovery.data, runMutation.isPending]);
+
   const estimate = capability.estimateByResolution[data.resolution] ?? capability.estimateByResolution["1K"];
-  const runDisabled = runMutation.isPending || data.text.trim().length === 0;
-  const changedDot = data.inputsChangedSinceLastRun && !runMutation.isPending;
+  const isRunning = runMutation.isPending || (data.model === "codex/gpt-image" && !!data.activeJobId);
+  const runDisabled = isRunning || data.text.trim().length === 0;
+  const changedDot = data.inputsChangedSinceLastRun && !isRunning;
 
   const promptPreview = data.text.trim().length > 0 ? data.text.trim() : "(no prompt)";
 
@@ -277,7 +313,7 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
               {promptPreview}
             </div>
           )}
-          {runMutation.isPending ? <RunningOverlay label={data.runStatus ?? "Running"} /> : null}
+          {isRunning ? <RunningOverlay label={data.runStatus ?? "Running"} /> : null}
         </div>
       ) : (
       <>
@@ -437,7 +473,7 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
         ) : (
           <EmptySlot label="Latest output" />
         )}
-        {runMutation.isPending ? <RunningOverlay label={data.runStatus ?? "Running"} /> : null}
+        {isRunning ? <RunningOverlay label={data.runStatus ?? "Running"} /> : null}
       </div>
 
       {history.length > 0 ? (
@@ -482,11 +518,11 @@ export function PromptNode({ id, data }: NodeProps<PromptGraphNode>) {
         className="flex h-11 w-full items-center justify-between gap-3 border-[3px] border-black bg-[#ffd400] px-3 text-[12px] font-black uppercase tracking-[0.16em] shadow-[4px_4px_0_0_#0a0a0a] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0_0_#0a0a0a] disabled:cursor-not-allowed disabled:bg-[#e5dfc9] disabled:text-black/40 disabled:shadow-none"
       >
         <span className="flex items-center gap-2">
-          {runMutation.isPending ? "Running…" : "Run"}
+          {isRunning ? "Running…" : "Run"}
           {changedDot ? <span className="inline-block h-2 w-2 bg-[#d8421b]" aria-hidden /> : null}
         </span>
         <span className="font-mono text-[11px] font-medium text-black/70">
-          ~${estimate?.toFixed(2) ?? "0.00"}
+          {data.model === "codex/gpt-image" ? "$0 · Codex subscription" : `~$${estimate?.toFixed(2) ?? "0.00"}`}
         </span>
       </button>
       {data.errorMessage ? (

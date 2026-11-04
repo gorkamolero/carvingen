@@ -8,7 +8,7 @@ The canvas and workflow runner share the same server-managed job executor. No de
 |---|---|---|
 | Mesh / Tripo P2 | `tripo3d/p2/image-to-3d` | Every returned mesh variant and preview; convert FBX-only results to GLB locally |
 | Mesh / Tripo H3.1 | `tripo3d/h3.1/image-to-3d`, optionally `tripo3d/h3.1/multiview-to-3d` | Same; multi-view order front, left, back, right |
-| Multi-view | `fal-ai/nano-banana-2/edit`, one request per view/cutout | Front, left, optional back, one image per comma-separated equipment item |
+| Multi-view | `fal-ai/nano-banana-2/edit` (default) or `codex/gpt-image`, one request per view/cutout | Front, right, optional back, one image per comma-separated equipment item |
 | Bake | Blender `bake.py` or `tripo3d/tripo/remesh` | Blender: GLB, FBX, base-color PNG, actual triangle count. Tripo: returned artifacts, local GLB conversion if needed |
 | Rig | `fal-ai/meshy/rigging` | GLB, FBX, basic animations, actual GLB joint names/count, rig task ID |
 | Animate | `fal-ai/meshy/rigging/multi-animation`; custom inputs use Blender `retarget.py` | Per-clip files, combined animation GLB, ZIP |
@@ -48,7 +48,7 @@ Run labels and the dry run use these rates (`src/lib/fal/pricing.ts`). The examp
 
 - Run buttons read the live graph when clicked, so a node uses an upstream rerun's outputs even if it has not re-rendered.
 - Provider polling and result fetches retry dropped connections; a network blip no longer fails a job the provider is still running and billing.
-- Multi-view's side view is the character's right side; Tripo multi-view gets front, left (that view mirrored), back and right.
+- Multi-view's side view is the character's right side, facing screen left; Tripo multi-view gets it unmirrored in its left slot, with front and back. Real runs showed a mirrored profile there leaves a ghost face on the back of the head.
 
 ## Local processing and limits
 
@@ -71,3 +71,7 @@ Files made locally, such as Bake outputs, are uploaded to fal storage under thei
 Unit tests cover payloads, limits, artifact extraction, graph connection rules, front-view selection, dry-run planning, append-only history, progress parsing, bone maps, ZIP structure, pricing, private-URL detection and clip naming. Provider generation is mocked.
 
 A real run on 3 November 2026 took one generated character through the whole chain on fal and local Blender: Tripo P2 returned 31,702 triangles, the Blender bake brought it to 12,000 with a 2048 texture, Meshy rigged it with 24 bones, and Animate added Idle (4.0 s) and Casual_Walk (4.2 s). Engine export (Unity) wrote `Idle.fbx` and `Casual_Walk.fbx`. Loading each FBX headless in Blender showed one skinned armature, 24 bones with Unity names (Hips → Spine → Chest → UpperChest → Neck), 12,000 triangles and exactly one clip per file (97 and 100 frames). Each result was opened in a Viewer on the canvas, and the Animate Viewer switches between both clips. The canvas is in [`images/character-atlas-canvas.png`](images/character-atlas-canvas.png).
+
+### GPT Image · Codex subscription
+
+GPT Image · Codex subscription (`codex/gpt-image`) requires the Codex CLI signed in with a ChatGPT plan on the machine running the server. It takes about a minute per image and has $0 fal cost; set `CODEX_PATH` to override the default `codex` binary. Prompt supports up to 10 references and 1:1, 3:4, 4:3, 9:16 and 16:9, with no resolution control. Multi-view can select this engine instead of the default Nano Banana 2; each view and equipment cutout runs sequentially, retaining the same artifact names. Jobs run in isolated directories with a ten-minute timeout and a shared limit of two concurrent images.

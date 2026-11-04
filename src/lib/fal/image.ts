@@ -34,7 +34,7 @@ export function validateImageInput(input: ImageGenInput) {
     throw new ApiError(400, `${input.modelBase} does not support ${input.aspectRatio}.`);
   }
 
-  if (!capability.resolutions.includes(input.resolution)) {
+  if (input.modelBase !== "codex/gpt-image" && !capability.resolutions.includes(input.resolution)) {
     throw new ApiError(400, `${input.modelBase} does not support ${input.resolution}.`);
   }
 
@@ -50,6 +50,8 @@ export function buildImageRequest(input: ImageGenInput) {
   validateImageInput(input);
 
   switch (input.modelBase) {
+    case "codex/gpt-image":
+      throw new Error("Codex images must use server-managed jobs, never fal.");
     case "openai/gpt-image-2":
       return {
         prompt: input.prompt,

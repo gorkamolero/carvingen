@@ -14,6 +14,7 @@ export const pipelineDataSchema = z.object({
   runStatus: z.string().nullable().default(null),
   errorMessage: z.string().nullable().default(null),
   collapsed: z.boolean().default(false),
+  imageModel: z.enum(["fal-ai/nano-banana-2", "codex/gpt-image"]).default("fal-ai/nano-banana-2"),
   includeBack: z.boolean().default(true),
   equipment: z.string().default("weapons, shield, backpack"),
   engine: z.enum(["blender", "tripo"]).default("blender"),

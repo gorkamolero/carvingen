@@ -13,6 +13,7 @@ Every image model on fal has **two slugs**: the base slug for pure text-to-image
 
 | Base slug | Edit slug | Display name | Refs | Aspect ratios | Resolutions | Strengths |
 |-----------|-----------|--------------|------|---------------|-------------|-----------|
+| `codex/gpt-image` | Same local engine | GPT Image · Codex subscription | 10 | `1:1`, `3:4`, `4:3`, `9:16`, `16:9` | No control | ChatGPT subscription, $0 fal cost |
 | `openai/gpt-image-2` | `openai/gpt-image-2/edit` | ChatGPT Image Gen 2 | multi | `1:1`, `3:2`, `2:3`, up to `3:1` / `1:3` | `1K`, `2K`, `4K` | Strongest prompt adherence, multilingual text, native reasoning |
 | `fal-ai/nano-banana-2` | `fal-ai/nano-banana-2/edit` | Nano Banana 2 | 14 | `1:1`, `3:4`, `4:3`, `9:16`, `16:9` | `1K` only | Fast, cheap, great for iterative reference-chaining |
 | `fal-ai/nano-banana-pro` | `fal-ai/nano-banana-pro/edit` | Nano Banana Pro | 6 | `1:1`, `3:4`, `4:3`, `9:16`, `16:9` | `1K`, `2K` | Multi-image fusion, multilingual text |
@@ -153,3 +154,7 @@ Any node that has submitted a fal job and is waiting for a result shows a clear 
 ## Character models
 
 See [CHARACTER_PIPELINE.md](CHARACTER_PIPELINE.md) for the verified Tripo P2/H3.1/remesh and Meshy rig/multi-animation input fields, price units and output behavior. Free OpenAPI/pricing/catalogue snapshots are checked into `docs/fal-schemas/`. Nano Banana 2 text/edit price was refreshed to $0.08/image on 2026-11-03. No real provider generation was used during implementation.
+
+### GPT Image · Codex subscription
+
+GPT Image · Codex subscription (`codex/gpt-image`) requires the Codex CLI signed in with a ChatGPT plan on the machine running the server. It takes about a minute per image and has $0 fal cost; set `CODEX_PATH` to override the default `codex` binary. Prompt supports up to 10 references and 1:1, 3:4, 4:3, 9:16 and 16:9, with no resolution control. Multi-view can select this engine instead of the default Nano Banana 2; each view and equipment cutout runs sequentially, retaining the same artifact names. Jobs run in isolated directories with a ten-minute timeout and a shared limit of two concurrent images.

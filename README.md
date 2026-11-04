@@ -15,7 +15,7 @@ The first pieces were made by hand: prompts in a chat, images saved in folders, 
 ## What is in it
 
 - **Nodes:** Image, Prompt, Vision, Video, Mesh, Multi-view, Bake, Rig, Animate, Animation upload, Engine export and Viewer. Up to 14 reference images on Nano Banana 2. Every run stays in the node's history. Undo and redo cover every change to the graph.
-- **Models, all through [fal](https://fal.ai):** Flux Kontext Pro, Nano Banana 2 and Pro, GPT Image 2, Veo 3.1, Seedance, Meshy v6, Hunyuan 3D, Tripo P2 and H3.1.
+- **Models:** GPT Image · Codex subscription locally; through [fal](https://fal.ai): Flux Kontext Pro, Nano Banana 2 and Pro, GPT Image 2, Veo 3.1, Seedance, Meshy v6, Hunyuan 3D, Tripo P2 and H3.1.
 - **3D:** GLB, FBX, USDZ, OBJ and STL downloads, and a model viewer.
 - **Scripts:** run a whole canvas from JSON (`pnpm workflow`), and batch characters through multi-view, Meshy rigging and animation, and packing for games (`pnpm characters`, `pnpm character:pack`). See [`docs/WORKFLOW_JSON.md`](docs/WORKFLOW_JSON.md).
 - **Stack:** Next.js 16, React 19, React Flow, Valtio, TanStack Query, SQLite with Drizzle, and a local folder for generated assets.
@@ -27,7 +27,7 @@ pnpm install
 pnpm dev:local
 ```
 
-Open http://localhost:3001. Generation needs a `FAL_KEY` in a local `.env.local`; every Run spends money on fal, and the cost of each Run is shown on its button. Local state defaults to `./carvingen.sqlite` and `./outputs/`, both git-ignored.
+Open http://localhost:3001. Fal generation needs a `FAL_KEY` in a local `.env.local` and costs money. Codex image generation uses your signed-in ChatGPT subscription with $0 fal cost. Each Run shows its estimate. Local state defaults to `./carvingen.sqlite` and `./outputs/`, both git-ignored.
 
 For local development with generation, also set:
 
@@ -80,3 +80,7 @@ pnpm exec tsx scripts/blender-smoke.ts
 ```
 
 The dry run checks the chain without spending; the smoke test checks the Blender steps on a generated mesh. Details are in [`docs/CHARACTER_PIPELINE.md`](docs/CHARACTER_PIPELINE.md), and what the verification run cost is in [`docs/COSTS.md`](docs/COSTS.md).
+
+### GPT Image · Codex subscription
+
+GPT Image · Codex subscription (`codex/gpt-image`) requires the Codex CLI signed in with a ChatGPT plan on the machine running the server. It takes about a minute per image and has $0 fal cost; set `CODEX_PATH` to override the default `codex` binary. Prompt supports up to 10 references and 1:1, 3:4, 4:3, 9:16 and 16:9, with no resolution control. Multi-view can select this engine instead of the default Nano Banana 2; each view and equipment cutout runs sequentially, retaining the same artifact names. Jobs run in isolated directories with a ten-minute timeout and a shared limit of two concurrent images.

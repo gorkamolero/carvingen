@@ -27,7 +27,8 @@ describe("workflow runner", () => {
     const summary = await runWorkflow(await loadWorkflowDefinition("examples/workflows/character-atlas.json"), { dryRun: true });
     expect(summary.plan?.map((n) => n.type)).toEqual(["prompt", "multiview", "mesh", "bake", "rig", "animate", "export"]);
     expect(summary.unknownCostNodes).toEqual([]);
-    expect(summary.estimatedKnownCostUsd).toBeCloseTo(2.22);
+    expect(summary.plan?.filter((n) => ["prompt", "multiview"].includes(n.type)).map((n) => n.estimate)).toEqual(["$0 · Codex subscription", "$0 · Codex subscription"]);
+    expect(summary.estimatedKnownCostUsd).toBeCloseTo(1.74);
   });
   it("parses workflow defaults", () => {
     const workflow = parseWorkflowDefinition({

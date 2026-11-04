@@ -37,6 +37,8 @@ Multi-project plumbing: every `/api/projects/*` and `/api/jobs/*` call carries t
 
 ## 1. Prompt (the workhorse)
 
+GPT Image · Codex subscription (`codex/gpt-image`) requires the Codex CLI signed in with a ChatGPT plan on the machine running the server. It takes about a minute per image and has $0 fal cost; set `CODEX_PATH` to override the default `codex` binary. Prompt supports up to 10 references and 1:1, 3:4, 4:3, 9:16 and 16:9, with no resolution control. Multi-view can select this engine instead of the default Nano Banana 2; each view and equipment cutout runs sequentially, retaining the same artifact names. Jobs run in isolated directories with a ten-minute timeout and a shared limit of two concurrent images.
+
 **Purpose.** One node does the whole "describe + generate" step. Text, model, run, output — all in a single card.
 
 **UI.**
@@ -200,7 +202,9 @@ These nodes have separate palette tiles. All runnable character nodes and Mesh u
 
 ### Multi-view (`multiview`)
 
-One `image-in`; one selectable `image-out` (front by default). Nano Banana 2 edit produces T-pose front, right side and optional back views, and separate equipment cutouts on white. The side view is the character's right side because image models reliably draw a profile facing screen left; for Tripo multi-view the Mesh job mirrors it into Tripo's left slot and sends front, left, back, right. To steer skin, eyes or outfit, put a Prompt node between the reference and Multi-view and describe the character there. Equipment names are comma-separated. H3.1 multi-view consumes front/left/back automatically when enabled, excluding equipment.
+Select `imageModel: "codex/gpt-image"` for subscription generation ($0 fal cost), or `fal-ai/nano-banana-2` for the existing default. Codex uses the same view prompts and front/right/back/equipment artifact names; see the Prompt requirements above.
+
+One `image-in`; one selectable `image-out` (front by default). Nano Banana 2 edit produces T-pose front, right side and optional back views, and separate equipment cutouts on white. The side view is the character's right side because image models reliably draw a profile facing screen left; for Tripo multi-view the Mesh job sends it as is in Tripo's left slot, which wants a profile facing screen left (a mirrored profile leaves a ghost face on the back of the head). To steer skin, eyes or outfit, put a Prompt node between the reference and Multi-view and describe the character there. Equipment names are comma-separated. H3.1 multi-view consumes front/left/back automatically when enabled, excluding equipment.
 
 ### Bake (`bake`)
 

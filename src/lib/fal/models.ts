@@ -1,4 +1,5 @@
 export const IMAGE_MODEL_BASES = [
+  "codex/gpt-image",
   "openai/gpt-image-2",
   "fal-ai/nano-banana-2",
   "fal-ai/nano-banana-pro",
@@ -32,6 +33,13 @@ export type ModelCapability = {
 };
 
 export const IMAGE_MODEL_CAPABILITIES: Record<ImageModelBase, ModelCapability> = {
+  "codex/gpt-image": {
+    displayName: "GPT Image · Codex subscription",
+    tagline: "Your ChatGPT plan · no fal cost · ~1 min",
+    estimateByResolution: { "1K": 0 },
+    aspectRatios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
+    resolutions: [], maxReferences: 10, usesEditSuffix: false,
+  },
   "openai/gpt-image-2": {
     displayName: "ChatGPT Image Gen 2",
     tagline: "Follows the prompt closest",
