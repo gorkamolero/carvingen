@@ -1,10 +1,11 @@
 import { z } from "zod";
 
-import { createProject, listProjects } from "@/lib/db/repositories/projects";
+import { createProject, getOrCreateInitialProject, listProjects } from "@/lib/db/repositories/projects";
 import { ApiError } from "@/lib/http/errors";
 import { jsonError, jsonOk, parseJson } from "@/lib/http/json";
 
 const createProjectSchema = z.object({
+  initial: z.boolean().optional(),
   name: z.string().trim().min(1).max(120),
 });
 
@@ -21,7 +22,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = createProjectSchema.parse(await parseJson(request));
-    return jsonOk(await createProject(body.name), { status: 201 });
+    return jsonOk(await (body.initial ? getOrCreateInitialProject() : createProject(body.name)), { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return jsonError(new ApiError(400, error.issues[0]?.message ?? "Invalid request."));

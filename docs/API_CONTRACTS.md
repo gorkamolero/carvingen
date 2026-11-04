@@ -192,7 +192,7 @@ Array<{ id: string; name: string; createdAt: string; updatedAt: string }>
 
 ## 9. `POST /api/projects`
 
-Create. Body: `{ name: string }`. Response: the new project row.
+Create. Body: `{ name: string, initial?: boolean }`. Response: the project graph. With `initial: true`, atomically return the latest updated project or create “Untitled project” only if none exists. The landing page sends this POST only after an empty list; concurrent initial requests cannot create duplicates.
 
 ## 10. `GET /api/projects/:id`
 
@@ -250,3 +250,8 @@ Returns HTTP 202 `{jobId}`. Inputs reference existing assets, not arbitrary loca
 `POST /api/assets/upload` additionally accepts signature-validated `.glb`, `.fbx` and `.bvh` animation files within the existing upload limit. Their asset kind reflects the format. Multipart requests must not override the browser's generated Content-Type boundary.
 
 The CLI also supplies optional `publicUrl` and `providerUrls` (asset-ID → provider URL) to preserve `--public-url` and `--fal-storage-inputs` behavior for server-managed mesh stages. Asset IDs must still resolve locally; these overrides only change the URL the provider fetches.
+
+
+## Project page routes
+
+Projects have stable URLs at `/projects/<id>`; reload reopens that graph and saved viewport. `/` opens the most recently updated project, creating one only if the database is empty. The switcher and New project button navigate to project URLs, with browser Back/Forward support. Unknown IDs show “Project not found” with a link to `/` and never create a project. Add `?node=<nodeId>` to centre and select an existing node after load; unknown nodes are ignored. `/portfolio-demo` remains unchanged.

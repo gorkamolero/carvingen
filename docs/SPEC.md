@@ -177,3 +177,8 @@ In learning mode we flag decisions where your input shapes the product more than
 - OpenAPI schema per endpoint: `https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=<slug>`
 - `@google/model-viewer` docs: https://modelviewer.dev/
 - Neobrutalism shadcn variants: https://www.neobrutalism.dev
+
+
+## Project page routes
+
+Projects have stable URLs at `/projects/<id>`; reload reopens that graph and saved viewport. `/` opens the most recently updated project, creating one only if the database is empty. The switcher and New project button navigate to project URLs, with browser Back/Forward support. Unknown IDs show “Project not found” with a link to `/` and never create a project. Add `?node=<nodeId>` to centre and select an existing node after load; unknown nodes are ignored. `/portfolio-demo` remains unchanged.

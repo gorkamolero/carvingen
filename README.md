@@ -27,7 +27,11 @@ pnpm install
 pnpm dev:local
 ```
 
-Open http://localhost:3001. Fal generation needs a `FAL_KEY` in a local `.env.local` and costs money. Codex image generation uses your signed-in ChatGPT subscription with $0 fal cost. Each Run shows its estimate. Local state defaults to `./carvingen.sqlite` and `./outputs/`, both git-ignored.
+Open http://localhost:3001.
+
+Projects have stable URLs at `/projects/<id>`; reload reopens that graph and saved viewport. `/` opens the most recently updated project, creating one only if the database is empty. The switcher and New project button navigate to project URLs, with browser Back/Forward support. Unknown IDs show “Project not found” with a link to `/` and never create a project. Add `?node=<nodeId>` to centre and select an existing node after load; unknown nodes are ignored. `/portfolio-demo` remains unchanged.
+
+Fal generation needs a `FAL_KEY` in a local `.env.local` and costs money. Codex image generation uses your signed-in ChatGPT subscription with $0 fal cost. Each Run shows its estimate. Local state defaults to `./carvingen.sqlite` and `./outputs/`, both git-ignored.
 
 For local development with generation, also set:
 

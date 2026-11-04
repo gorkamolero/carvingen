@@ -1,7 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSnapshot } from "valtio";
 
 import { CanvasFlow } from "@/features/canvas/flow/CanvasFlow";
@@ -19,6 +21,7 @@ import {
   undo,
 } from "@/lib/graph/store";
 import type { ProjectGraph } from "@/lib/graph/types";
+import { projectPath } from "@/lib/projects/routing";
 
 type ProjectListItem = {
   id: string;
@@ -27,9 +30,11 @@ type ProjectListItem = {
   updatedAt: string;
 };
 
-export function CanvasScreen() {
+export function CanvasScreen({ projectId }: { projectId: string }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const graph = useSnapshot(graphHistory.value);
+  const pendingSave = useRef<(() => Promise<void>) | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
 
   const projectsQuery = useQuery({
@@ -38,19 +43,9 @@ export function CanvasScreen() {
   });
 
   const activeProjectQuery = useQuery({
-    queryKey: ["project", graph.activeProjectId],
-    queryFn: async () => {
-      if (!graph.activeProjectId) {
-        const created = await fetchJson<ProjectGraph>("/api/projects", {
-          method: "POST",
-          body: JSON.stringify({ name: "Untitled project" }),
-        });
-        return created;
-      }
-
-      return fetchJson<ProjectGraph>(`/api/projects/${graph.activeProjectId}`);
-    },
-    enabled: projectsQuery.isSuccess,
+    queryKey: ["project", projectId],
+    queryFn: () => fetchJson<ProjectGraph>(`/api/projects/${projectId}`),
+    staleTime: 0, gcTime: 0, retry: false, refetchOnWindowFocus: false,
   });
 
   const createProjectMutation = useMutation({
@@ -64,7 +59,7 @@ export function CanvasScreen() {
     },
     onSuccess: async (project) => {
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
-      hydrateProject(project);
+      router.push(projectPath(project.id));
     },
   });
 
@@ -95,31 +90,16 @@ export function CanvasScreen() {
   });
 
   useEffect(() => {
-    if (projectsQuery.data && projectsQuery.data.length > 0 && !graph.activeProjectId) {
-      hydrateProject({
-        ...(activeProjectQuery.data ?? {
-          id: projectsQuery.data[0].id,
-          name: projectsQuery.data[0].name,
-          nodes: [],
-          edges: [],
-          viewport: { x: 0, y: 0, zoom: 1 },
-        }),
-      });
-    }
-  }, [activeProjectQuery.data, graph.activeProjectId, projectsQuery.data]);
-
-  useEffect(() => {
-    if (activeProjectQuery.data) {
-      hydrateProject(activeProjectQuery.data);
-    }
+    if (activeProjectQuery.data) hydrateProject(activeProjectQuery.data);
   }, [activeProjectQuery.data]);
 
   useEffect(() => {
-    if (!graph.activeProjectId || !graph.projectsLoaded) {
+    if (!activeProjectQuery.data || graph.activeProjectId !== projectId || !graph.projectsLoaded) {
       return;
     }
 
-    const timeout = window.setTimeout(async () => {
+    const save = async () => {
+      pendingSave.current = null;
       setSaving(true);
       try {
         await fetchJson(`/api/projects/${graph.activeProjectId}/save`, {
@@ -132,15 +112,19 @@ export function CanvasScreen() {
             viewport: graph.viewport,
           }),
         });
-        markSaved();
+        if (graphHistory.value.activeProjectId === projectId) markSaved();
         await queryClient.invalidateQueries({ queryKey: ["projects"] });
       } catch {
-        setSaving(false);
+        if (graphHistory.value.activeProjectId === projectId) setSaving(false);
       }
-    }, 500);
+    };
+    pendingSave.current = save;
+    const timeout = window.setTimeout(save, 500);
 
     return () => window.clearTimeout(timeout);
   }, [
+    activeProjectQuery.data,
+    projectId,
     graph.activeProjectId,
     graph.projectName,
     graph.nodes,
@@ -150,6 +134,11 @@ export function CanvasScreen() {
     graph.revision,
     queryClient,
   ]);
+
+  useEffect(() => () => {
+    void pendingSave.current?.();
+    graphHistory.value.projectsLoaded = false;
+  }, []);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -169,22 +158,21 @@ export function CanvasScreen() {
 
   const projectItems = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
 
+  if (activeProjectQuery.isError) return <main className="p-8">Unable to load project. <Link href="/">Back to projects</Link></main>;
+
   return (
     <div className="flex h-screen flex-col bg-[#f4efdf] text-black">
       <ProjectSwitcher
         projects={projectItems}
-        activeProjectId={graph.activeProjectId}
-        onSelect={async (projectId) => {
-          const project = await fetchJson<ProjectGraph>(`/api/projects/${projectId}`);
-          hydrateProject(project);
-        }}
+        activeProjectId={projectId}
+        creating={createProjectMutation.isPending}
         onCreate={() => createProjectMutation.mutate()}
         onRename={() => renameProjectMutation.mutate()}
         onOpenHelp={() => setHelpOpen(true)}
       />
       <div className="flex min-h-0 flex-1">
         <SidebarPalette />
-        <CanvasFlow />
+        {activeProjectQuery.data && graph.projectsLoaded && graph.activeProjectId === projectId && <CanvasFlow key={projectId} />}
       </div>
       <div
         data-testid="save-status"

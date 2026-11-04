@@ -23,6 +23,10 @@ async function main() {
   });
 
   console.log(JSON.stringify(summary, null, 2));
+  if (!options.dryRun) {
+    const baseUrl = options.baseUrl ?? process.env.PUBLIC_URL ?? "http://127.0.0.1:3001";
+    console.log(`${baseUrl.replace(/\/+$/, "")}/projects/${encodeURIComponent(summary.projectId)}`);
+  }
 }
 
 function parseArgs(args: string[]): CliOptions {

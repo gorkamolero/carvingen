@@ -1,5 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { projectPath } from "@/lib/projects/routing";
+
 type ProjectListItem = {
   id: string;
   name: string;
@@ -9,18 +12,19 @@ type ProjectListItem = {
 export function ProjectSwitcher({
   projects,
   activeProjectId,
-  onSelect,
   onCreate,
+  creating = false,
   onRename,
   onOpenHelp,
 }: {
   projects: ProjectListItem[];
   activeProjectId: string | null;
-  onSelect: (projectId: string) => void;
   onCreate: () => void;
+  creating?: boolean;
   onRename: () => void;
   onOpenHelp: () => void;
 }) {
+  const router = useRouter();
   return (
     <div className="flex items-center gap-3 border-b-[3px] border-black bg-[#efe8cd] px-5 py-3">
       <div className="flex items-baseline gap-2">
@@ -41,7 +45,7 @@ export function ProjectSwitcher({
         <select
           data-testid="project-switcher"
           value={activeProjectId ?? ""}
-          onChange={(event) => onSelect(event.target.value)}
+          onChange={(event) => router.push(projectPath(event.target.value))}
           className="h-9 min-w-[220px] border-[3px] border-black bg-white px-3 text-[13px] font-bold leading-none shadow-[3px_3px_0_0_#0a0a0a]"
         >
           {projects.map((project) => (
@@ -65,6 +69,7 @@ export function ProjectSwitcher({
           data-testid="new-project-button"
           type="button"
           onClick={onCreate}
+          disabled={creating}
           className="h-9 border-[3px] border-black bg-[#ffd400] px-3 text-[11px] font-black uppercase tracking-[0.14em] shadow-[3px_3px_0_0_#0a0a0a] transition active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0_0_#0a0a0a]"
         >
           + New

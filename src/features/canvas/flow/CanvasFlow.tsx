@@ -2,6 +2,8 @@
 
 import {
   Background,
+  useNodesInitialized,
+  useReactFlow,
   ConnectionMode,
   Controls,
   MiniMap,
@@ -11,7 +13,8 @@ import {
   type ReactFlowInstance,
   SelectionMode,
 } from "@xyflow/react";
-import { useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef } from "react";
 import { useSnapshot } from "valtio";
 
 import { nodeTypes } from "@/features/canvas/flow/nodeTypes";
@@ -29,6 +32,26 @@ import {
 } from "@/lib/graph/store";
 import type { CarvingEdge, CarvingNode } from "@/lib/graph/types";
 import { getErrorMessage, showErrorToast, showLoadingToast, showSuccessToast } from "@/lib/notifications/toast";
+
+function NodeDeepLink() {
+  const nodeId = useSearchParams().get("node");
+  const initialized = useNodesInitialized();
+  const { getNode, setCenter } = useReactFlow();
+  const handled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!nodeId) { handled.current = null; return; }
+    if (!initialized || handled.current === nodeId) return;
+    const node = getNode(nodeId);
+    if (!node) return;
+    handled.current = nodeId;
+    onNodesChange(graphHistory.value.nodes.map((item) => ({
+      id: item.id, type: "select" as const, selected: item.id === nodeId,
+    })));
+    void setCenter(node.position.x + (node.measured?.width ?? 0) / 2,
+      node.position.y + (node.measured?.height ?? 0) / 2, { zoom: graphHistory.value.viewport.zoom });
+  }, [nodeId, initialized, getNode, setCenter]);
+  return null;
+}
 
 export function CanvasFlow() {
   const graph = useSnapshot(graphHistory.value);
@@ -176,7 +199,7 @@ export function CanvasFlow() {
         }}
         onConnectEnd={onConnectEnd}
         connectionMode={ConnectionMode.Loose}
-        fitView
+        defaultViewport={graph.viewport}
         minZoom={0.05}
         maxZoom={3}
         // Figma-style selection: drag on empty canvas = marquee select.
@@ -200,6 +223,7 @@ export function CanvasFlow() {
           commitGraphInteraction();
         }}
       >
+        <NodeDeepLink />
         <Controls showInteractive={false} position="bottom-left" />
         <MiniMap pannable zoomable maskColor="rgba(0,0,0,0.04)" nodeStrokeColor="#0a0a0a" nodeStrokeWidth={3} nodeColor="#ffd400" />
         <Background color="#0a0a0a33" gap={20} size={1.5} />

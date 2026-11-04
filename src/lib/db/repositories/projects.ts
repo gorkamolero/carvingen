@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "@/lib/db/client";
@@ -153,13 +153,16 @@ export async function saveProjectGraph(input: ProjectGraph) {
 
 export async function getOrCreateInitialProject() {
   ensureDatabase();
-  const mostRecent = await db.query.projects.findFirst({
-    orderBy: (table, { desc }) => [desc(table.updatedAt)],
-  });
-
-  if (mostRecent) {
-    return loadProject(mostRecent.id);
-  }
-
-  return createProject("Untitled project");
+  // The check and insert share a write transaction, including across tabs/workers.
+  const id = db.transaction((tx) => {
+    const latest = tx.select().from(projects)
+      .orderBy(desc(projects.updatedAt), desc(projects.createdAt), projects.id).get();
+    if (latest) return latest.id;
+    const id = nanoid();
+    const now = new Date();
+    tx.insert(projects).values({ id, name: "Untitled project", createdAt: now, updatedAt: now,
+      viewportX: 0, viewportY: 0, viewportZoom: 1 }).run();
+    return id;
+  }, { behavior: "immediate" });
+  return loadProject(id);
 }

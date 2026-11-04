@@ -67,6 +67,10 @@ export function hydrateProject(graph: ProjectGraph) {
   graphHistory.value.viewport = graph.viewport;
   graphHistory.value.projectsLoaded = true;
   graphHistory.value.revision = 0;
+  graphHistory.value.isSaving = false;
+  graphHistory.value.lastSavedAt = null;
+  graphHistory.history.nodes = [];
+  graphHistory.history.index = -1;
   commitHistory();
 }
 
