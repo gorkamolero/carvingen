@@ -1,3 +1,4 @@
+import { TRIPO_PRESET_IDS } from "@/lib/tripo/presets";
 import { z } from "zod";
 
 export const PIPELINE_KINDS = ["multiview", "bake", "rig", "animate", "animation", "export"] as const;
@@ -17,7 +18,7 @@ export const pipelineDataSchema = z.object({
   imageModel: z.enum(["fal-ai/nano-banana-2", "codex/gpt-image"]).default("fal-ai/nano-banana-2"),
   includeBack: z.boolean().default(true),
   equipment: z.string().default("weapons, shield, backpack"),
-  engine: z.enum(["blender", "tripo"]).default("blender"),
+  engine: z.enum(["blender", "meshy", "tripo"]).default("blender"),
   targetTriangles: z.number().int().min(48).max(2000000).default(12000),
   keepUvs: z.boolean().default(false),
   /** Bake: turn the model around its up axis before baking, for meshes that come out facing sideways. */
@@ -32,10 +33,13 @@ export const pipelineDataSchema = z.object({
   triangleCount: z.number().nullable().default(null),
   boneNames: z.array(z.string()).default([]),
   budgetPass: z.boolean().nullable().default(null),
+  rigEngine: z.enum(["meshy", "tripo"]).nullable().default(null),
+  tripoRigTaskId: z.string().nullable().default(null),
+  tripoPresetIds: z.array(z.enum(TRIPO_PRESET_IDS)).max(10).default(["preset:idle", "preset:walk"]),
   rigTaskId: z.string().nullable().default(null),
 });
 export type PipelineData = z.infer<typeof pipelineDataSchema>;
-export function createPipelineData() { return pipelineDataSchema.parse({}); }
+export function createPipelineData(kind?: string) { return pipelineDataSchema.parse(kind === "rig" ? { engine: "meshy" } : {}); }
 
 export const tripoOptionsSchema = z.object({
   tripoFaceLimit: z.number().int().min(48).max(2000000).default(30000),

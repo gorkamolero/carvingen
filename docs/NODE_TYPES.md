@@ -231,3 +231,15 @@ One or more `glb-in` inputs → `glb-out`. Unity Humanoid or Unreal naming, char
 Mesh adds P2 and H3.1 alongside existing Meshy/Hunyuan. Controls follow their schemas, including face count, quad, PBR, textures and quality. Quad FBX-only results are converted locally to GLB. Every returned variant is retained. Viewer accepts Mesh/Bake/Rig/Animate/Export outputs and offers clip selection and play/pause.
 
 The palette scrolls vertically so all tiles remain accessible on smaller windows.
+
+### Rig / Animate: native Tripo engine
+
+Rig accepts `engine: "meshy"` (default) or `"tripo"`. Tripo checks the uploaded input
+for biped riggability, requests a v3 Mixamo skeleton, and saves GLB + FBX. Results retain
+`rigEngine`, `tripoRigTaskId`, and actual `boneNames` (the UI shows their count).
+Animate derives its engine from the connected completed rig. Use `tripoPresetIds`
+for Tripo (`preset:idle`, `walk`, `run`, `dive`, `climb`, `jump`, `slash`, `shoot`, `hurt`,
+`fall`, `turn`, all with the `preset:` prefix); `presetIds` remains the Meshy numeric list.
+Empty preset lists allow custom local clips. Tripo requires server `TRIPO_API_KEY` and
+bills Tripo credits, not fal: 30 credits per rig and 15 per clip including FBX conversion
+($0.01/credit). [API details](tripo-api.md).

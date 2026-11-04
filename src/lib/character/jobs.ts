@@ -1,3 +1,6 @@
+import { withRetries } from "./retries";
+export { withRetries } from "./retries";
+import { TripoClient, tripoArtifact } from "@/lib/tripo/client";
 import { generateCodexImage } from "@/lib/codex/image";
 import { reconcileCodexJob } from "@/lib/codex/jobs";
 import { combineAnimationGlbs } from "./pack";
@@ -23,6 +26,8 @@ import { makeZip } from "./zip";
 export const pipelineRequestSchema = z.object({
   projectId: z.string().min(1), nodeId: z.string().min(1),
   data: z.record(z.string(), z.unknown()),
+  inputRigEngine: z.enum(["meshy", "tripo"]).optional(),
+  inputTripoRigTaskId: z.string().min(1).optional(),
   providerUrls: z.record(z.string(), z.url()).optional(),
   publicUrl: z.url().optional(),
   imageAssetIds: z.array(z.string()).max(14).default([]),
@@ -32,7 +37,7 @@ export const pipelineRequestSchema = z.object({
 });
 export type PipelineRequest = z.infer<typeof pipelineRequestSchema>;
 export type JobOutput = { name: string; kind: string; assetId: string };
-export type PipelineResult = { assets: JobOutput[]; outputAssetId: string | null; triangleCount?: number; boneNames?: string[]; rigTaskId?: string | null; budgetPass?: boolean; clips?: unknown[] };
+export type PipelineResult = { assets: JobOutput[]; outputAssetId: string | null; triangleCount?: number; boneNames?: string[]; rigEngine?: "meshy" | "tripo"; tripoRigTaskId?: string | null; rigTaskId?: string | null; budgetPass?: boolean; clips?: unknown[] };
 export const RUNNABLE_KINDS = ["mesh", "multiview", "bake", "rig", "animate", "export"] as const;
 export type RunnableKind = typeof RUNNABLE_KINDS[number];
 const globalJobs = globalThis as typeof globalThis & { characterJobs?: Set<string> };
@@ -123,6 +128,21 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
     for (const file of result.files) await saveLocal({ ...file, name: suffix.startsWith("custom-") ? `${suffix}-${file.kind}` : file.name });
     const { files: _files, ...rest } = result; void _files; metadata = { ...metadata, ...rest };
   }
+  function tripoClient() {
+    return new TripoClient({ onProgress: progress, onTask: async (taskId, endpoint) => {
+      await writeFile(join(directory, `tripo-${taskId}.json`), JSON.stringify({ taskId, endpoint }));
+    } });
+  }
+  async function saveTripoPair(client: TripoClient, task: import("@/lib/tripo/client").TripoTask, name: string) {
+    const glb = tripoArtifact(task, "glb", name);
+    const saved = await persistRemoteAsset({ ...glb, jobId });
+    if (!saved) throw new Error(`Could not persist ${glb.name}`);
+    assets.push({ name: glb.name, kind: glb.kind, assetId: saved.id });
+    const fbx = tripoArtifact(await client.convertFbx(glb.sourceUrl), "fbx", name);
+    const savedFbx = await persistRemoteAsset({ ...fbx, jobId });
+    if (!savedFbx) throw new Error(`Could not persist ${fbx.name}`);
+    assets.push({ name: fbx.name, kind: fbx.kind, assetId: savedFbx.id });
+  }
   async function generate(slug: string, input: Record<string, unknown>, prefix = "") {
     fal.config({ credentials: getFalKey() });
     await progress(5, `Submitting ${slug}`);
@@ -172,10 +192,31 @@ export async function executeCharacterJob(kind: RunnableKind, request: PipelineR
       else await blender("bake", { input: await local(inputId), targetTriangles: d.targetTriangles, keepUvs: d.keepUvs, textureSize: d.textureSize, turnDegrees: d.turnDegrees });
       break;
     case "rig":
+      if (d.engine === "tripo") {
+        const tripo = tripoClient();
+        await progress(0, "Tripo upload");
+        const source = await tripo.uploadGlb(await readFile(await local(inputId)));
+        await tripo.rigCheck(source);
+        const rig = await tripo.rig(source);
+        metadata = { rigEngine: "tripo", tripoRigTaskId: rig.task_id };
+        await saveTripoPair(tripo, rig, "rigged-character");
+        break;
+      }
+      metadata.rigEngine = "meshy";
       await generate(CHARACTER_ENDPOINTS.rig, buildRigRequest(await url(inputId), d.heightMeters)); break;
     case "animate":
-      if (!d.presetIds.length && !request.animationAssetIds.length) throw new Error("Select a preset or connect a custom animation.");
-      if (d.presetIds.length) await generate(CHARACTER_ENDPOINTS.animate, buildAnimationRequest(await url(inputId), d.heightMeters, d.presetIds));
+      if (request.inputRigEngine === "tripo") {
+        if (!request.inputTripoRigTaskId) throw new Error("Tripo animation needs the upstream Tripo rig task ID. Run Rig again.");
+        if (!d.tripoPresetIds.length && !request.animationAssetIds.length) throw new Error("Select a preset or connect a custom animation.");
+        if (d.tripoPresetIds.length) {
+          const tripo = tripoClient();
+          for (const preset of new Set(d.tripoPresetIds)) await saveTripoPair(tripo, await tripo.retarget(request.inputTripoRigTaskId, preset), `animations-tripo-${preset.slice(7)}`);
+        }
+        metadata = { rigEngine: "tripo", tripoRigTaskId: request.inputTripoRigTaskId };
+      } else {
+        if (!d.presetIds.length && !request.animationAssetIds.length) throw new Error("Select a preset or connect a custom animation.");
+        if (d.presetIds.length) await generate(CHARACTER_ENDPOINTS.animate, buildAnimationRequest(await url(inputId), d.heightMeters, d.presetIds));
+      }
       for (const [i, clip] of request.animationAssetIds.entries()) await blender("retarget", { input: await local(assets.find((a) => a.kind === "glb" && /rigged_character/.test(a.name))?.assetId ?? inputId), clip: await local(clip) }, `custom-${i}`);
       break;
     case "export":
@@ -215,17 +256,4 @@ export function clipDisplayName(assetName: string, presetIds: number[]) {
   const index = /^animations-(\d+)-/.exec(assetName)?.[1];
   const preset = index === undefined ? undefined : ANIMATION_PRESETS.find((p) => p.id === presetIds[Number(index)]);
   return preset?.name ?? assetName;
-}
-
-/** Retries network-level failures (not provider errors) a few times with a growing pause. */
-export async function withRetries<T>(call: () => Promise<T>, attempts = 6, pauseMs = 2000): Promise<T> {
-  for (let attempt = 1; ; attempt++) {
-    try { return await call(); }
-    catch (error) {
-      const message = error instanceof Error ? `${error.message} ${String((error as { cause?: unknown }).cause ?? "")}` : String(error);
-      const transient = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR|socket hang up|network/i.test(message);
-      if (!transient || attempt >= attempts) throw error;
-      await new Promise((r) => setTimeout(r, pauseMs * attempt));
-    }
-  }
 }

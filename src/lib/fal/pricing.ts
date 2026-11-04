@@ -1,3 +1,4 @@
+import { TRIPO_CREDITS } from "@/lib/tripo/presets";
 import type { CarvingNode } from "@/lib/graph/types";
 import { IMAGE_MODEL_CAPABILITIES } from "./models";
 import { viewPrompts } from "@/lib/character/fal";
@@ -20,6 +21,11 @@ export function estimateNodeCost(node: Pick<CarvingNode, "type" | "data">): { us
     return { usd, label: `~$${usd.toFixed(2)}` };
   }
   if (node.type === "multiview" && "equipment" in d) { const usd = viewPrompts(d.includeBack, d.equipment).length * 0.08; return { usd, label: `~$${usd.toFixed(2)}` }; }
+  if ((node.type === "rig" && "engine" in d && d.engine === "tripo") || (node.type === "animate" && "rigEngine" in d && d.rigEngine === "tripo")) {
+    const credits = node.type === "rig" ? TRIPO_CREDITS.rig + TRIPO_CREDITS.convert : (TRIPO_CREDITS.retarget + TRIPO_CREDITS.convert) * new Set("tripoPresetIds" in d ? d.tripoPresetIds : []).size;
+    const usd = credits * TRIPO_CREDITS.usdPerCredit;
+    return { usd, label: `${credits} Tripo credits · ~$${usd.toFixed(2)}` };
+  }
   if (node.type === "rig") return { usd: 0.2, label: "~$0.20" };
   if (node.type === "animate" && "presetIds" in d) {
     if (!d.presetIds.length) return { usd: 0, label: "$0 · local" };

@@ -25,7 +25,10 @@ export function characterInputs(node: CarvingNode, nodes: readonly CarvingNode[]
     }
     return n.data.outputAssetId ? [n.data.outputAssetId] : Object.entries(n.data.artifactAssetIds).filter(([k]) => /fbx/.test(k)).slice(0, 1).map(([, id]) => id);
   });
-  return { ...(viewNames ? { viewNames } : {}), imageAssetIds: viewNames ? imageAssetIds : [...new Set(imageAssetIds)], meshAssetIds: [...new Set(meshAssetIds)], animationAssetIds: incoming("animation-in").flatMap((n) => n.type === "animation" && n.data.assetId ? [n.data.assetId] : []) };
+  const rig = incoming("glb-in")[0];
+  const inputRigEngine = rig && "rigEngine" in rig.data ? rig.data.rigEngine ?? undefined : undefined;
+  const inputTripoRigTaskId = inputRigEngine === "tripo" && rig && "tripoRigTaskId" in rig.data ? rig.data.tripoRigTaskId ?? undefined : undefined;
+  return { inputRigEngine, inputTripoRigTaskId, ...(viewNames ? { viewNames } : {}), imageAssetIds: viewNames ? imageAssetIds : [...new Set(imageAssetIds)], meshAssetIds: [...new Set(meshAssetIds)], animationAssetIds: incoming("animation-in").flatMap((n) => n.type === "animation" && n.data.assetId ? [n.data.assetId] : []) };
 }
 export async function submitCharacterJob(kind: string, request: PipelineRequest) {
   return fetchJson<{ jobId: string }>(`/api/jobs/${kind}`, { method: "POST", body: JSON.stringify(request) });
@@ -37,5 +40,6 @@ export function resultPatch(result: PipelineResult, previous: { outputAssetIds: 
   return { activeJobId: null, runStatus: null, errorMessage: null, inputsChangedSinceLastRun: false,
     outputAssetId: result.outputAssetId, outputAssetIds: [...previous.outputAssetIds, ...result.assets.map((a) => a.assetId)],
     artifactAssetIds, activeAssetId: artifactAssetIds.front ?? null,
+    rigEngine: result.rigEngine ?? null, tripoRigTaskId: result.tripoRigTaskId ?? null,
     triangleCount: result.triangleCount ?? null, boneNames: result.boneNames ?? [], budgetPass: result.budgetPass ?? null, rigTaskId: result.rigTaskId ?? null };
 }

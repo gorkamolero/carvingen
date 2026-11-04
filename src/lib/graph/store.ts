@@ -89,7 +89,7 @@ export function markSaved() {
 }
 
 function createNode(nodeType: CarvingNode["type"], position: { x: number; y: number }) {
-  if (PIPELINE_KINDS.some((kind) => kind === nodeType)) return { id: nanoid(), type: nodeType, position, data: createPipelineData() } as CarvingNode;
+  if (PIPELINE_KINDS.some((kind) => kind === nodeType)) return { id: nanoid(), type: nodeType, position, data: createPipelineData(nodeType) } as CarvingNode;
   if (nodeType === "video") {
     return { id: nanoid(), type: "video", position, data: createVideoNodeData() } as CarvingNode;
   }

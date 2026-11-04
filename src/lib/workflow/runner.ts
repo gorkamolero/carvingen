@@ -210,6 +210,11 @@ export async function runWorkflow(workflow: WorkflowDefinition, options: Workflo
   if (dryRun) {
     const planned = ordered.filter((n) => n.run).map((n) => graph.nodes.find((g) => g.id === n.id)!);
     for (const node of planned) { if (["image", "animation", "viewer"].includes(node.type!)) throw new ApiError(400, `${node.type} is not runnable`); }
+    for (const node of planned) {
+      if (node.type !== "animate") continue;
+      const source = graph.nodes.find((n) => graph.edges.some((e) => e.source === n.id && e.target === node.id && e.targetHandle === "glb-in"));
+      if (source?.type === "rig") node.data.rigEngine = source.data.engine === "tripo" ? "tripo" : "meshy";
+    }
     return {
       plan: planned.map((n) => ({ id: n.id, type: n.type!, estimate: estimateNodeCost(n).label })),
       estimatedKnownCostUsd: planned.reduce((s, n) => s + (estimateNodeCost(n).usd ?? 0), 0),
@@ -284,14 +289,14 @@ function createWorkflowNode(input: {
     case "animation": {
       const asset = definition.asset ? input.assetsById.get(definition.asset) : null;
       if (definition.asset && !asset) throw new ApiError(400, `Unknown animation asset ${definition.asset}`);
-      return { id: nodeId, type: "animation", position, data: { ...createPipelineData(), ...definition.data, assetId: asset?.assetId ?? null, fileName: asset ? basename(asset.path) : null } } satisfies CarvingNode;
+      return { id: nodeId, type: "animation", position, data: { ...createPipelineData(definition.type), ...definition.data, assetId: asset?.assetId ?? null, fileName: asset ? basename(asset.path) : null } } satisfies CarvingNode;
     }
     case "multiview":
     case "bake":
     case "rig":
     case "animate":
     case "export":
-      return { id: nodeId, type: definition.type, position, data: { ...createPipelineData(), ...definition.data } } as CarvingNode;
+      return { id: nodeId, type: definition.type, position, data: { ...createPipelineData(definition.type), ...definition.data } } as CarvingNode;
     case "image": {
       const asset = definition.asset ? input.assetsById.get(definition.asset) : null;
       if (definition.asset && !asset) {

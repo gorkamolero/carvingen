@@ -164,6 +164,8 @@ function validateContentType(kind: PersistedAssetKind, mimeType: string) {
     if (
       normalizedMime.startsWith("model/") ||
       normalizedMime === "application/octet-stream" ||
+      // S3-backed CDNs (e.g. Tripo's) default to this label for binary files.
+      normalizedMime === "binary/octet-stream" ||
       normalizedMime === "application/x-tgif" ||
       normalizedMime === "application/vnd.autodesk.fbx" ||
       ((kind === "obj" || kind === "mtl") && normalizedMime === "text/plain")

@@ -67,6 +67,21 @@ describe("remote asset persistence boundary", () => {
     expect(asset?.kind).toBe("fbx");
   });
 
+  it("accepts the binary/octet-stream label S3-backed CDNs send for GLB files", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        headers: { "content-type": "binary/octet-stream", "content-length": "3" },
+      }),
+    );
+
+    const asset = await persistRemoteAsset({
+      sourceUrl: "https://v3.fal.media/files/rig.glb",
+      kind: "glb",
+    });
+
+    expect(asset?.kind).toBe("glb");
+  });
+
   it("rejects local or private URLs before fetching", async () => {
     await expect(
       persistRemoteAsset({

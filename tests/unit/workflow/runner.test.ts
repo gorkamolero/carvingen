@@ -30,6 +30,15 @@ describe("workflow runner", () => {
     expect(summary.plan?.filter((n) => ["prompt", "multiview"].includes(n.type)).map((n) => n.estimate)).toEqual(["$0 · Codex subscription", "$0 · Codex subscription"]);
     expect(summary.estimatedKnownCostUsd).toBeCloseTo(1.74);
   });
+  it("plans Tripo rig and downstream clips including FBX conversion", async () => {
+    const workflow = await loadWorkflowDefinition("examples/workflows/character-atlas.json");
+    const rig = workflow.nodes.find((n) => n.type === "rig")!;
+    rig.data = { ...rig.data, engine: "tripo" };
+    const summary = await runWorkflow(workflow, { dryRun: true });
+    expect(summary.plan?.find((n) => n.type === "rig")?.estimate).toBe("30 Tripo credits · ~$0.30");
+    expect(summary.plan?.find((n) => n.type === "animate")?.estimate).toBe("30 Tripo credits · ~$0.30");
+    expect(summary.estimatedKnownCostUsd).toBeCloseTo(1.7);
+  });
   it("parses workflow defaults", () => {
     const workflow = parseWorkflowDefinition({
       project: { name: "Dry workflow" },

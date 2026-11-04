@@ -88,3 +88,8 @@ The dry run checks the chain without spending; the smoke test checks the Blender
 ### GPT Image · Codex subscription
 
 GPT Image · Codex subscription (`codex/gpt-image`) requires the Codex CLI signed in with a ChatGPT plan on the machine running the server. It takes about a minute per image and has $0 fal cost; set `CODEX_PATH` to override the default `codex` binary. Prompt supports up to 10 references and 1:1, 3:4, 4:3, 9:16 and 16:9, with no resolution control. Multi-view can select this engine instead of the default Nano Banana 2; each view and equipment cutout runs sequentially, retaining the same artifact names. Jobs run in isolated directories with a ten-minute timeout and a shared limit of two concurrent images.
+
+Rig also supports Tripo's native v3 humanoid rigging with Mixamo naming, alongside the
+Meshy default. Animate automatically offers Tripo presets for a Tripo rig. Set the server
+`TRIPO_API_KEY`; this bills Tripo credits, not fal (30 credits/$0.30 per GLB+FBX rig,
+15 credits/$0.15 per clip, including conversion). See [Tripo API notes](docs/tripo-api.md).

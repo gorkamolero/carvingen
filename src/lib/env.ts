@@ -14,7 +14,7 @@ const serverEnvSchema = z.object({
   MAX_REMOTE_ASSET_BYTES: z.coerce.number().int().positive().default(100 * 1024 * 1024),
   REMOTE_ASSET_ALLOWED_HOSTS: z
     .string()
-    .default("fal.media,v2.fal.media,v3.fal.media,storage.googleapis.com,cdn.meshy.ai,assets.meshy.ai"),
+    .default("fal.media,v2.fal.media,v3.fal.media,storage.googleapis.com,cdn.meshy.ai,assets.meshy.ai,cdn.tripo3d.ai"),
   FAL_PROXY_ALLOW_UNAUTHENTICATED: z
     .preprocess((value) => parseBooleanEnv(value), z.boolean())
     .default(false),
@@ -41,7 +41,7 @@ export function getServerEnv(): ServerEnv {
     MAX_REMOTE_ASSET_BYTES: process.env.MAX_REMOTE_ASSET_BYTES ?? 100 * 1024 * 1024,
     REMOTE_ASSET_ALLOWED_HOSTS:
       process.env.REMOTE_ASSET_ALLOWED_HOSTS ??
-      "fal.media,v2.fal.media,v3.fal.media,storage.googleapis.com,cdn.meshy.ai,assets.meshy.ai",
+      "fal.media,v2.fal.media,v3.fal.media,storage.googleapis.com,cdn.meshy.ai,assets.meshy.ai,cdn.tripo3d.ai",
     FAL_PROXY_ALLOW_UNAUTHENTICATED: process.env.FAL_PROXY_ALLOW_UNAUTHENTICATED ?? false,
   });
 

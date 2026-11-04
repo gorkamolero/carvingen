@@ -75,3 +75,17 @@ A real run on 3 November 2026 took one generated character through the whole cha
 ### GPT Image · Codex subscription
 
 GPT Image · Codex subscription (`codex/gpt-image`) requires the Codex CLI signed in with a ChatGPT plan on the machine running the server. It takes about a minute per image and has $0 fal cost; set `CODEX_PATH` to override the default `codex` binary. Prompt supports up to 10 references and 1:1, 3:4, 4:3, 9:16 and 16:9, with no resolution control. Multi-view can select this engine instead of the default Nano Banana 2; each view and equipment cutout runs sequentially, retaining the same artifact names. Jobs run in isolated directories with a ten-minute timeout and a shared limit of two concurrent images.
+
+### Native Tripo rigs and clips
+
+Rig now offers Meshy (default) and Tripo. Set server environment `TRIPO_API_KEY` to use
+Tripo's own v3 humanoid API, billed in Tripo credits rather than fal. Tripo uploads the
+connected GLB, checks biped riggability, and requests Mixamo naming. The returned GLB's
+actual bone names and count are shown; finger bones are not guaranteed by the docs.
+Animate follows its input rig's engine: Tripo uses the stored rig task ID and its 11 v3
+presets, while Meshy keeps its existing library. Each Tripo clip gets one retarget task;
+GLB and converted FBX files participate in the existing combined GLB and ZIP outputs.
+Run estimates include FBX conversion: 30 credits ($0.30) per rig and 15 ($0.15) per clip.
+Custom Animation inputs still use Blender. Workflow jobs and dry-run estimates support
+`engine: "tripo"` on Rig and `tripoPresetIds: ["preset:idle", "preset:walk"]` on Animate.
+See [request shapes, costs, and verification limits](tripo-api.md).
