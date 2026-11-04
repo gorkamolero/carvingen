@@ -1,5 +1,6 @@
 "use client";
 
+import { ViewerCaptureButtons } from "@/features/capture/ViewerCaptureButtons";
 import { AnimatedModelViewer } from "./AnimatedModelViewer";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useSnapshot } from "valtio";
@@ -43,6 +44,7 @@ export function ViewerNode({ id, data }: NodeProps<ViewerGraphNode>) {
             </div>
           )}
         </div>
+        {glbAssetId && <ViewerCaptureButtons nodeId={id} />}
       </NodeChrome>
     );
   }
@@ -101,6 +103,7 @@ export function ViewerNode({ id, data }: NodeProps<ViewerGraphNode>) {
           </span>
         </label>
       </div>
+      {glbAssetId && <ViewerCaptureButtons nodeId={id} />}
     </NodeChrome>
   );
 }

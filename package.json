@@ -26,7 +26,8 @@
     "meshy:animate": "tsx scripts/meshy-animate.ts",
     "motion:setup": "tsx scripts/motion-setup.ts",
     "test:motion": "tsx scripts/motion-test.ts",
-    "motion:smoke": "tsx scripts/motion-smoke.ts"
+    "motion:smoke": "tsx scripts/motion-smoke.ts",
+    "capture": "tsx scripts/capture.ts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.9.6",

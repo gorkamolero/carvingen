@@ -95,6 +95,22 @@ Meshy default. Animate automatically offers Tripo presets for a Tripo rig. Set t
 `TRIPO_API_KEY`; this bills Tripo credits, not fal (30 credits/$0.30 per GLB+FBX rig,
 15 credits/$0.15 per clip, including conversion). See [Tripo API notes](docs/tripo-api.md).
 
+## Capture a case study
+
+With the app running, capture an existing project without changing its graph.
+
+```sh
+pnpm capture <projectId> --out outputs/capture/<projectId> --base-url http://127.0.0.1:3001 --seconds 16
+```
+
+Requires Playwright Chromium (`pnpm exec playwright install chromium`) and `ffmpeg` on PATH. The command uses only GET requests. It writes a 3600×2400 canvas, 1400×1600 Viewer stills, a 700×800 H.264 MP4 for every embedded animation clip, a labeled multi-view sheet, and `notes.md`. Repeated Viewer source kinds receive numeric suffixes. Multiple Multi-view nodes share one sheet, grouped by numbered labels. Viewers without connected outputs are skipped. Rendering failures stop the command rather than producing a blank pack.
+
+`/capture/viewer?asset=<id>&clip=<name>&autorotate=0&bg=fafaf5&exposure=1` renders a model without chrome. `/capture/canvas/<projectId>` fits the graph with eager Viewers and read-only summary cards. Both expose `window.__captureReady`, or `window.__captureError` on model failure. Capture pages never save projects. The canvas export uses saved node positions and simplified cards to keep generation controls and polling out of capture.
+
+Viewer **Save still** renders at twice the displayed size. **Record** records the current clip for 10 seconds using browser MediaRecorder. Both upload a reusable asset, add it to the Viewer's capture history, and download it. The server converts WebM to MP4 when ffmpeg succeeds and preserves WebM with a visible message otherwise. Native canvas stills retain transparency; canvas recordings have a black background after MP4 conversion. These buttons save through the editor's usual project autosave. **Export canvas** in the top bar runs Playwright on the server and downloads a PNG of the saved project. **Save sheet** on Multi-view downloads its input and generated views using the same sharp renderer as the CLI.
+
+Notes match current output asset IDs to successful jobs, use generation-time settings and the existing pricing estimator, and exclude historical attempts. Tripo credits use $0.01 per credit when recorded. Estimated costs are marked. Missing job metadata stays explicitly unavailable. New animation results include the maximum sampler keyframe count as `frameCount` (sampled keyframes, independent of playback frame rate). For legacy results, capture inspects the current GLB and labels the sampler-count source explicitly. Counts stay unavailable when neither source exists.
+
 ## Credits
 
 Motion includes unmodified Apache-2.0 code from [Patch-gg/anymove](https://github.com/Patch-gg/anymove), pinned with source hashes in [NOTICE](third_party/anymove/NOTICE).

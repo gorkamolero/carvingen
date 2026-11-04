@@ -249,3 +249,10 @@ bills Tripo credits, not fal: 30 credits per rig and 15 per clip including FBX c
 | Node | Inputs / outputs |
 |---|---|
 | Motion (`motion`) | `glb-in` rig → `glb-out` custom clip; [CPU two-view method](MOTION.md) |
+
+### Capture controls
+
+- Viewer **Save still** saves a 2× PNG asset to capture history and downloads it.
+- Viewer **Record** records the current clip for 10 seconds, saves a WebM or server-converted MP4 asset to capture history, and downloads it.
+- Multi-view **Save sheet** downloads a labeled PNG of the input and available generated views.
+- The top bar **Export canvas** downloads a read-only 2× render of the saved graph.

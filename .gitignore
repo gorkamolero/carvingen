@@ -57,3 +57,8 @@ scripts/motion/__pycache__/
 scripts/motion/tests/__pycache__/
 third_party/anymove/**/__pycache__/
 .next-verify/
+
+# Local Claude Code files (dev-server config, personal settings, agent worktrees)
+.claude/launch.json
+.claude/settings.local.json
+.claude/worktrees/

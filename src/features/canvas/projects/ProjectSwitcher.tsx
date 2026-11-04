@@ -57,6 +57,7 @@ export function ProjectSwitcher({
       </label>
 
       <div className="ml-auto flex items-center gap-2">
+        {activeProjectId && <a className="h-9 border-[3px] border-black bg-white px-3 py-1 text-[11px] font-black uppercase" href={`/api/capture/${encodeURIComponent(activeProjectId)}/canvas`} download>Export canvas</a>}
         <button
           data-testid="rename-project-button"
           type="button"
